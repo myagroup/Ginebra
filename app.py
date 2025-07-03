@@ -5,6 +5,8 @@ import random
 import string
 from datetime import datetime
 from flask import ( Flask, render_template, redirect, url_for, request, flash, send_file, send_from_directory)
+from flask_mail import Mail, Message
+from itsdangerous import URLSafeTimedSerializer
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import ( LoginManager, UserMixin, login_user, login_required, logout_user, current_user)
 from functools import wraps
@@ -20,6 +22,23 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///' +
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'comprobantes')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# Configuración de Flask-Mail
+app.config['MAIL_SERVER'] = 'smtp.example.com'  # Cambia esto por tu servidor SMTP
+app.config['MAIL_PORT'] = 587  # Puerto SMTP
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'your-email@example.com'  # Cambia esto por tu correo electrónico
+app.config['MAIL_PASSWORD'] = 'your-email-password'  # Cambia esto por tu contraseña de correo electrónico
+
+mail = Mail(app)
+
+# Configuración de itsdangerous
+serializer = URLSafeTimedSerializer(app.secret_key)
+
+# New constants for file validation
+ALLOWED_EXTENSIONS = {'pdf'}
+MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB
+PER_PAGE = 10 # Constante para el número de elementos por página
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
@@ -154,15 +173,30 @@ def set_reserva_fields(reserva, form):
     for campo in campos_str:
         setattr(reserva, campo, form.get(campo, '').strip())
 
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 def guardar_comprobante(file, id_localizador):
     if file and file.filename:
+        if not allowed_file(file.filename):
+            return None, "Tipo de archivo no permitido. Solo se aceptan PDFs."
+        
+        # Check file size before saving
+        file.seek(0, os.SEEK_END)
+        file_size = file.tell()
+        file.seek(0) # Reset file pointer to the beginning
+
+        if file_size > MAX_CONTENT_LENGTH:
+            return None, f"El archivo es demasiado grande. El tamaño máximo permitido es {MAX_CONTENT_LENGTH / (1024 * 1024):.0f} MB."
+
         filename = secure_filename(file.filename)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         nombre_final = f"{id_localizador}_{timestamp}_{filename}"
         ruta = os.path.join(app.config['UPLOAD_FOLDER'], nombre_final)
         file.save(ruta)
-        return nombre_final
-    return None
+        return nombre_final, None
+    return None, None
 
 
 # ===== RUTAS =====
@@ -198,8 +232,26 @@ def admin_panel():
 @login_required
 @rol_required('admin', 'master')
 def admin_reservas():
-    reservas = Reserva.query.all()
-    return render_template('admin_reservas.html', reservas=reservas)
+    search_query = request.args.get('search', '').strip()
+    page = request.args.get('page', 1, type=int)
+
+    reservas_query = Reserva.query
+
+    if search_query:
+        reservas_query = reservas_query.filter(
+            db.or_(
+                Reserva.id_localizador.ilike(f'%{search_query}%'),
+                Reserva.producto.ilike(f'%{search_query}%'),
+                Reserva.nombre_pasajero.ilike(f'%{search_query}%'),
+                Reserva.destino.ilike(f'%{search_query}%'),
+                Reserva.nombre_ejecutivo.ilike(f'%{search_query}%'),
+                Reserva.usuario.has(Usuario.username.ilike(f'%{search_query}%')) # Search by username
+            )
+        )
+
+    reservas_paginated = reservas_query.paginate(page=page, per_page=PER_PAGE, error_out=False)
+    reservas = reservas_paginated.items
+    return render_template('admin_reservas.html', reservas=reservas, pagination=reservas_paginated, search_query=search_query)
 
 @app.route('/admin/usuarios/nuevo', methods=['GET', 'POST'])
 @login_required
@@ -301,8 +353,17 @@ def gestionar_reservas():
             reserva.id_localizador = id_localizador_form
             set_reserva_fields(reserva, request.form)
 
-            nombre_archivo = guardar_comprobante(file, reserva.id_localizador)
-            if nombre_archivo:
+            nombre_archivo, error_mensaje = guardar_comprobante(file, reserva.id_localizador)
+            if error_mensaje:
+                flash(error_mensaje, 'danger')
+            elif nombre_archivo:
+                # Eliminar el comprobante anterior si existe y se sube uno nuevo
+                if reserva.comprobante_venta and os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], reserva.comprobante_venta)):
+                    try:
+                        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], reserva.comprobante_venta))
+                        flash(f'Comprobante anterior {reserva.comprobante_venta} eliminado.', 'info')
+                    except OSError as e:
+                        flash(f'Error al eliminar comprobante anterior: {e}', 'warning')
                 reserva.comprobante_venta = nombre_archivo
 
         else:
@@ -312,8 +373,10 @@ def gestionar_reservas():
             nueva_reserva = Reserva(usuario_id=current_user.id, id_localizador=id_localizador_form)
             set_reserva_fields(nueva_reserva, request.form)
 
-            nombre_archivo = guardar_comprobante(file, id_localizador_form)
-            if nombre_archivo:
+            nombre_archivo, error_mensaje = guardar_comprobante(file, id_localizador_form)
+            if error_mensaje:
+                flash(error_mensaje, 'danger')
+            elif nombre_archivo:
                 nueva_reserva.comprobante_venta = nombre_archivo
 
             db.session.add(nueva_reserva)
@@ -341,6 +404,14 @@ def eliminar_reserva(id):
     if not puede_editar_reserva(reserva):
         flash('No autorizado.', 'danger')
         return redirect(url_for('gestionar_reservas'))
+
+    # Eliminar el archivo de comprobante si existe
+    if reserva.comprobante_venta:
+        ruta_comprobante = os.path.join(app.config['UPLOAD_FOLDER'], reserva.comprobante_venta)
+        if os.path.exists(ruta_comprobante):
+            os.remove(ruta_comprobante)
+            flash(f'Comprobante {reserva.comprobante_venta} eliminado del servidor.', 'info')
+
     db.session.delete(reserva)
     db.session.commit()
     flash('Reserva eliminada.', 'success')
@@ -394,7 +465,7 @@ def exportar_reservas():
 @app.route('/comprobantes/<filename>')
 @login_required
 def descargar_comprobante(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=False)
 
 
 @app.route('/logout')

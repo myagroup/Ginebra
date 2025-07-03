@@ -1,293 +1,525 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
+  <head>
     <meta charset="UTF-8" />
     <title>Gestión de Reservas</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
     <style>
-        body {
-            background-color: #003366;
-            color: #FFFFFF;
-            min-height: 100vh;
-        }
-        .container { padding-top: 2rem; padding-bottom: 3rem; }
-        .table thead { background-color: #002244; }
-        .table tbody tr:hover { background-color: #004080; }
-        .btn-custom {
-            background-color: #FF6600; color: #FFFFFF; border: none;
-        }
-        .btn-custom:hover, .btn-custom:focus {
-            background-color: #e65c00; color: #FFFFFF;
-        }
-        label { color: #FFFFFF; }
-        .form-control, .form-select {
-            background-color: #002244; border: 1px solid #FF6600; color: #FFFFFF;
-        }
-        .form-control:focus, .form-select:focus {
-            background-color: #002244; color: #FFFFFF;
-            border-color: #FF6600; box-shadow: 0 0 0 0.2rem rgba(255, 102, 0, 0.5);
-        }
-        .btn-danger { background-color: #cc3300; border: none; }
-        .btn-danger:hover { background-color: #992200; }
-        footer {
-            text-align: center; padding: 1rem 0;
-            background-color: #002244; color: #fff; margin-top: 3rem;
-        }
+      body {
+        background-color: #003366;
+        color: #ffffff;
+        min-height: 100vh;
+      }
+      .container {
+        padding-top: 2rem;
+        padding-bottom: 3rem;
+      }
+      .table thead {
+        background-color: #002244;
+      }
+      .table tbody tr:hover {
+        background-color: #004080;
+      }
+      .btn-custom {
+        background-color: #ff6600;
+        color: #ffffff;
+        border: none;
+      }
+      .btn-custom:hover,
+      .btn-custom:focus {
+        background-color: #e65c00;
+        color: #ffffff;
+      }
+      label {
+        color: #ffffff;
+      }
+      .form-control,
+      .form-select {
+        background-color: #002244;
+        border: 1px solid #ff6600;
+        color: #ffffff;
+      }
+      .form-control:focus,
+      .form-select:focus {
+        background-color: #002244;
+        color: #ffffff;
+        border-color: #ff6600;
+        box-shadow: 0 0 0 0.2rem rgba(255, 102, 0, 0.5);
+      }
+      .btn-danger {
+        background-color: #cc3300;
+        border: none;
+      }
+      .btn-danger:hover {
+        background-color: #992200;
+      }
+      footer {
+        text-align: center;
+        padding: 1rem 0;
+        background-color: #002244;
+        color: #fff;
+        margin-top: 3rem;
+      }
     </style>
-</head>
-<body>
-
-<div class="container">
-
-    <div class="mb-3">
-        <a href="{% if current_user.rol == 'admin' %}{{ url_for('admin_panel') }}{% else %}{{ url_for('dashboard') }}{% endif %}" class="btn btn-outline-light">
-            ← Volver atrás
+  </head>
+  <body>
+    <div class="container">
+      <div class="mb-3">
+        <a
+          href="{% if current_user.rol == 'admin' %}{{ url_for('admin_panel') }}{% else %}{{ url_for('dashboard') }}{% endif %}"
+          class="btn btn-outline-light"
+        >
+          ← Volver atrás
         </a>
-    </div>
+      </div>
 
-    <h2 class="mb-4">Reservas de {{ current_user.nombre }}</h2>
+      <h2 class="mb-4">Reservas de {{ current_user.nombre }}</h2>
 
-    {% with messages = get_flashed_messages() %}
-    {% if messages %}
-    <div class="alert alert-info text-dark" role="alert">
+      {% with messages = get_flashed_messages() %} {% if messages %}
+      <div class="alert alert-info text-dark" role="alert">
         {{ messages[0] }}
-    </div>
-    {% endif %}
-    {% endwith %}
+      </div>
+      {% endif %} {% endwith %} {% if editar_reserva %}
+      <h4 class="mb-3">Editar Reserva #{{ editar_reserva.id }}</h4>
+      {% else %}
+      <h4 class="mb-3">Nueva Reserva</h4>
+      {% endif %}
 
-    {% if editar_reserva %}
-        <h4 class="mb-3">Editar Reserva #{{ editar_reserva.id }}</h4>
-    {% else %}
-        <h4 class="mb-3">Nueva Reserva</h4>
-    {% endif %}
-
-    <!-- Nota: Para subir archivos debe usarse enctype multipart/form-data -->
-    <form method="post" autocomplete="off" enctype="multipart/form-data" novalidate>
+      <!-- Nota: Para subir archivos debe usarse enctype multipart/form-data -->
+      <form
+        method="post"
+        autocomplete="off"
+        enctype="multipart/form-data"
+        novalidate
+      >
         {% if editar_reserva %}
-            <input type="hidden" name="reserva_id" value="{{ editar_reserva.id }}">
+        <input
+          type="hidden"
+          name="reserva_id"
+          value="{{ editar_reserva.id }}"
+        />
         {% endif %}
 
         <div class="row g-3">
-            <div class="col-md-6 d-flex align-items-end">
-                <div class="flex-grow-1 me-2">
-                    <label class="form-label" for="id_localizador">ID Localizador</label>
-                    <input type="text" id="id_localizador" class="form-control" name="id_localizador" required
-                        value="{{ editar_reserva.id_localizador if editar_reserva else '' }}"
-                        {% if editar_reserva and editar_reserva.id_localizador %}readonly{% endif %}
-                        autocomplete="off" aria-describedby="helpLocalizador">
-                    <div id="helpLocalizador" class="form-text text-white">Genera o edita el código único.</div>
-                </div>
-                <button type="button" id="btn_generar" class="btn btn-warning mb-3"
-                    onclick="generarLocalizador()" 
-                    {% if editar_reserva and editar_reserva.id_localizador %}disabled{% endif %}>
-                    Generar
-                </button>
+          <div class="col-md-6 d-flex align-items-end">
+            <div class="flex-grow-1 me-2">
+              <label class="form-label" for="id_localizador"
+                >ID Localizador</label
+              >
+              <input
+                type="text"
+                id="id_localizador"
+                class="form-control"
+                name="id_localizador"
+                required
+                value="{{ editar_reserva.id_localizador if editar_reserva else '' }}"
+                {%
+                if
+                editar_reserva
+                and
+                editar_reserva.id_localizador
+                %}readonly{%
+                endif
+                %}
+                autocomplete="off"
+                aria-describedby="helpLocalizador"
+              />
+              <div id="helpLocalizador" class="form-text text-white">
+                Genera o edita el código único.
+              </div>
             </div>
+            <button
+              type="button"
+              id="btn_generar"
+              class="btn btn-warning mb-3"
+              onclick="generarLocalizador()"
+              {%
+              if
+              editar_reserva
+              and
+              editar_reserva.id_localizador
+              %}disabled{%
+              endif
+              %}
+            >
+              Generar
+            </button>
+          </div>
 
-            <div class="col-md-6">
-                <label class="form-label" for="fecha_viaje">Fecha de viaje</label>
-                <input type="date" id="fecha_viaje" class="form-control" name="fecha_viaje"
-                       value="{{ editar_reserva.fecha_viaje if editar_reserva else '' }}"
-                       autocomplete="off" required>
-            </div>
+          <div class="col-md-6">
+            <label class="form-label" for="fecha_viaje">Fecha de viaje</label>
+            <input
+              type="date"
+              id="fecha_viaje"
+              class="form-control"
+              name="fecha_viaje"
+              value="{{ editar_reserva.fecha_viaje if editar_reserva else '' }}"
+              autocomplete="off"
+              required
+            />
+          </div>
 
-            <div class="col-md-6">
-                <label class="form-label" for="producto">Producto</label>
-                <input type="text" id="producto" class="form-control" name="producto"
-                       value="{{ editar_reserva.producto if editar_reserva else '' }}"
-                       autocomplete="off" required>
-            </div>
+          <div class="col-md-6">
+            <label class="form-label" for="producto">Producto</label>
+            <input
+              type="text"
+              id="producto"
+              class="form-control"
+              name="producto"
+              value="{{ editar_reserva.producto if editar_reserva else '' }}"
+              autocomplete="off"
+              required
+            />
+          </div>
 
-            <div class="col-md-6">
-                <label class="form-label" for="fecha_venta">Fecha de venta</label>
-                <input type="date" id="fecha_venta" class="form-control" name="fecha_venta"
-                       value="{{ editar_reserva.fecha_venta if editar_reserva else '' }}"
-                       autocomplete="off" required>
-            </div>
+          <div class="col-md-6">
+            <label class="form-label" for="fecha_venta">Fecha de venta</label>
+            <input
+              type="date"
+              id="fecha_venta"
+              class="form-control"
+              name="fecha_venta"
+              value="{{ editar_reserva.fecha_venta if editar_reserva else '' }}"
+              autocomplete="off"
+              required
+            />
+          </div>
 
-            <div class="col-md-6">
-                <label class="form-label" for="modalidad_pago">Modalidad de pago</label>
-                <input type="text" id="modalidad_pago" class="form-control" name="modalidad_pago"
-                       value="{{ editar_reserva.modalidad_pago if editar_reserva else '' }}"
-                       autocomplete="off" required>
-            </div>
+          <div class="col-md-6">
+            <label class="form-label" for="modalidad_pago"
+              >Modalidad de pago</label
+            >
+            <input
+              type="text"
+              id="modalidad_pago"
+              class="form-control"
+              name="modalidad_pago"
+              value="{{ editar_reserva.modalidad_pago if editar_reserva else '' }}"
+              autocomplete="off"
+              required
+            />
+          </div>
 
-            <div class="col-md-6">
-                <label class="form-label" for="nombre_pasajero">Nombre del pasajero</label>
-                <input type="text" id="nombre_pasajero" class="form-control" name="nombre_pasajero"
-                       value="{{ editar_reserva.nombre_pasajero if editar_reserva else '' }}"
-                       autocomplete="off" required>
-            </div>
+          <div class="col-md-6">
+            <label class="form-label" for="nombre_pasajero"
+              >Nombre del pasajero</label
+            >
+            <input
+              type="text"
+              id="nombre_pasajero"
+              class="form-control"
+              name="nombre_pasajero"
+              value="{{ editar_reserva.nombre_pasajero if editar_reserva else '' }}"
+              autocomplete="off"
+              required
+            />
+          </div>
 
-            <div class="col-md-6">
-                <label class="form-label" for="telefono_pasajero">Teléfono del pasajero</label>
-                <input type="text" id="telefono_pasajero" class="form-control" name="telefono_pasajero"
-                       value="{{ editar_reserva.telefono_pasajero if editar_reserva else '' }}"
-                       autocomplete="tel">
-            </div>
+          <div class="col-md-6">
+            <label class="form-label" for="telefono_pasajero"
+              >Teléfono del pasajero</label
+            >
+            <input
+              type="text"
+              id="telefono_pasajero"
+              class="form-control"
+              name="telefono_pasajero"
+              value="{{ editar_reserva.telefono_pasajero if editar_reserva else '' }}"
+              autocomplete="tel"
+            />
+          </div>
 
-            <div class="col-md-6">
-                <label class="form-label" for="mail_pasajero">Mail pasajero</label>
-                <input type="email" id="mail_pasajero" class="form-control" name="mail_pasajero"
-                       value="{{ editar_reserva.mail_pasajero if editar_reserva else '' }}"
-                       autocomplete="email" required>
-            </div>
+          <div class="col-md-6">
+            <label class="form-label" for="mail_pasajero">Mail pasajero</label>
+            <input
+              type="email"
+              id="mail_pasajero"
+              class="form-control"
+              name="mail_pasajero"
+              value="{{ editar_reserva.mail_pasajero if editar_reserva else '' }}"
+              autocomplete="email"
+              required
+            />
+          </div>
 
-            <div class="col-md-6">
-                <label class="form-label" for="precio_venta_total">Precio venta total</label>
-                <input type="number" step="0.01" id="precio_venta_total" class="form-control" name="precio_venta_total"
-                       value="{{ editar_reserva.precio_venta_total if editar_reserva else '' }}" required>
-            </div>
+          <div class="col-md-6">
+            <label class="form-label" for="precio_venta_total"
+              >Precio venta total</label
+            >
+            <input
+              type="number"
+              step="0.01"
+              id="precio_venta_total"
+              class="form-control"
+              name="precio_venta_total"
+              value="{{ editar_reserva.precio_venta_total if editar_reserva else '' }}"
+              required
+            />
+          </div>
 
-            <!-- Campos numéricos netos -->
-            <div class="col-md-6">
-                <label class="form-label" for="hotel_neto">Hotel neto</label>
-                <input type="number" step="0.01" id="hotel_neto" class="form-control" name="hotel_neto"
-                       value="{{ editar_reserva.hotel_neto if editar_reserva else '' }}">
-            </div>
-            <div class="col-md-6">
-                <label class="form-label" for="vuelo_neto">Vuelo neto</label>
-                <input type="number" step="0.01" id="vuelo_neto" class="form-control" name="vuelo_neto"
-                       value="{{ editar_reserva.vuelo_neto if editar_reserva else '' }}">
-            </div>
-            <div class="col-md-6">
-                <label class="form-label" for="traslado_neto">Traslado neto</label>
-                <input type="number" step="0.01" id="traslado_neto" class="form-control" name="traslado_neto"
-                       value="{{ editar_reserva.traslado_neto if editar_reserva else '' }}">
-            </div>
-            <div class="col-md-6">
-                <label class="form-label" for="seguro_neto">Seguro neto</label>
-                <input type="number" step="0.01" id="seguro_neto" class="form-control" name="seguro_neto"
-                       value="{{ editar_reserva.seguro_neto if editar_reserva else '' }}">
-            </div>
-            <div class="col-md-6">
-                <label class="form-label" for="circuito_neto">Circuito neto</label>
-                <input type="number" step="0.01" id="circuito_neto" class="form-control" name="circuito_neto"
-                       value="{{ editar_reserva.circuito_neto if editar_reserva else '' }}">
-            </div>
-            <div class="col-md-6">
-                <label class="form-label" for="crucero_neto">Crucero neto</label>
-                <input type="number" step="0.01" id="crucero_neto" class="form-control" name="crucero_neto"
-                       value="{{ editar_reserva.crucero_neto if editar_reserva else '' }}">
-            </div>
-            <div class="col-md-6">
-                <label class="form-label" for="excursion_neto">Excursion neto</label>
-                <input type="number" step="0.01" id="excursion_neto" class="form-control" name="excursion_neto"
-                       value="{{ editar_reserva.excursion_neto if editar_reserva else '' }}">
-            </div>
+          <!-- Campos numéricos netos -->
+          <div class="col-md-6">
+            <label class="form-label" for="hotel_neto">Hotel neto</label>
+            <input
+              type="number"
+              step="0.01"
+              id="hotel_neto"
+              class="form-control"
+              name="hotel_neto"
+              value="{{ editar_reserva.hotel_neto if editar_reserva else '' }}"
+            />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="vuelo_neto">Vuelo neto</label>
+            <input
+              type="number"
+              step="0.01"
+              id="vuelo_neto"
+              class="form-control"
+              name="vuelo_neto"
+              value="{{ editar_reserva.vuelo_neto if editar_reserva else '' }}"
+            />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="traslado_neto">Traslado neto</label>
+            <input
+              type="number"
+              step="0.01"
+              id="traslado_neto"
+              class="form-control"
+              name="traslado_neto"
+              value="{{ editar_reserva.traslado_neto if editar_reserva else '' }}"
+            />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="seguro_neto">Seguro neto</label>
+            <input
+              type="number"
+              step="0.01"
+              id="seguro_neto"
+              class="form-control"
+              name="seguro_neto"
+              value="{{ editar_reserva.seguro_neto if editar_reserva else '' }}"
+            />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="circuito_neto">Circuito neto</label>
+            <input
+              type="number"
+              step="0.01"
+              id="circuito_neto"
+              class="form-control"
+              name="circuito_neto"
+              value="{{ editar_reserva.circuito_neto if editar_reserva else '' }}"
+            />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="crucero_neto">Crucero neto</label>
+            <input
+              type="number"
+              step="0.01"
+              id="crucero_neto"
+              class="form-control"
+              name="crucero_neto"
+              value="{{ editar_reserva.crucero_neto if editar_reserva else '' }}"
+            />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="excursion_neto"
+              >Excursion neto</label
+            >
+            <input
+              type="number"
+              step="0.01"
+              id="excursion_neto"
+              class="form-control"
+              name="excursion_neto"
+              value="{{ editar_reserva.excursion_neto if editar_reserva else '' }}"
+            />
+          </div>
 
-            <!-- Paquete numérico -->
-            <div class="col-md-6">
-                <label class="form-label" for="paquete">Paquete</label>
-                <input type="number" step="0.01" id="paquete" class="form-control" name="paquete"
-                       value="{{ editar_reserva.paquete if editar_reserva else '' }}"
-                       autocomplete="off">
-            </div>
+          <!-- Paquete numérico -->
+          <div class="col-md-6">
+            <label class="form-label" for="paquete">Paquete</label>
+            <input
+              type="number"
+              step="0.01"
+              id="paquete"
+              class="form-control"
+              name="paquete"
+              value="{{ editar_reserva.paquete if editar_reserva else '' }}"
+              autocomplete="off"
+            />
+          </div>
 
-            <div class="col-md-6">
-                <label class="form-label" for="destino">Destino</label>
-                <input type="text" id="destino" class="form-control" name="destino"
-                       value="{{ editar_reserva.destino if editar_reserva else '' }}"
-                       autocomplete="off" required>
-            </div>
+          <div class="col-md-6">
+            <label class="form-label" for="destino">Destino</label>
+            <input
+              type="text"
+              id="destino"
+              class="form-control"
+              name="destino"
+              value="{{ editar_reserva.destino if editar_reserva else '' }}"
+              autocomplete="off"
+              required
+            />
+          </div>
 
-            <div class="col-md-6">
-                <label class="form-label" for="localizadores">Localizadores</label>
-                <input type="text" id="localizadores" class="form-control" name="localizadores"
-                       value="{{ editar_reserva.localizadores if editar_reserva else '' }}"
-                       autocomplete="off">
-            </div>
+          <div class="col-md-6">
+            <label class="form-label" for="localizadores">Localizadores</label>
+            <input
+              type="text"
+              id="localizadores"
+              class="form-control"
+              name="localizadores"
+              value="{{ editar_reserva.localizadores if editar_reserva else '' }}"
+              autocomplete="off"
+            />
+          </div>
 
-            <div class="col-md-6">
-                <label class="form-label" for="nombre_ejecutivo">Nombre ejecutivo</label>
-                <input type="text" id="nombre_ejecutivo" class="form-control" name="nombre_ejecutivo"
-                       value="{{ editar_reserva.nombre_ejecutivo if editar_reserva else '' }}"
-                       autocomplete="off">
-            </div>
+          <div class="col-md-6">
+            <label class="form-label" for="nombre_ejecutivo"
+              >Nombre ejecutivo</label
+            >
+            <input
+              type="text"
+              id="nombre_ejecutivo"
+              class="form-control"
+              name="nombre_ejecutivo"
+              value="{{ editar_reserva.nombre_ejecutivo if editar_reserva else '' }}"
+              autocomplete="off"
+            />
+          </div>
 
-            <div class="col-md-6">
-                <label class="form-label" for="correo_ejecutivo">Correo ejecutivo</label>
-                <input type="email" id="correo_ejecutivo" class="form-control" name="correo_ejecutivo"
-                       value="{{ editar_reserva.correo_ejecutivo if editar_reserva else '' }}"
-                       autocomplete="email">
-            </div>
+          <div class="col-md-6">
+            <label class="form-label" for="correo_ejecutivo"
+              >Correo ejecutivo</label
+            >
+            <input
+              type="email"
+              id="correo_ejecutivo"
+              class="form-control"
+              name="correo_ejecutivo"
+              value="{{ editar_reserva.correo_ejecutivo if editar_reserva else '' }}"
+              autocomplete="email"
+            />
+          </div>
 
-            <!-- Campo para subir PDF -->
-            <div class="col-md-12">
-                <label class="form-label" for="archivo_pdf">Adjuntar archivo PDF</label>
-                <input type="file" id="archivo_pdf" name="archivo_pdf" class="form-control" accept="application/pdf">
-                {% if editar_reserva and editar_reserva.archivo_pdf_url %}
-                <small class="text-white">Archivo actual: <a href="{{ editar_reserva.archivo_pdf_url }}" target="_blank" class="link-warning">Ver PDF</a></small>
-                {% endif %}
-            </div>
+          <!-- Campo para subir PDF -->
+          <div class="col-md-12">
+            <label class="form-label" for="archivo_pdf"
+              >Adjuntar archivo PDF</label
+            >
+            <input
+              type="file"
+              id="archivo_pdf"
+              name="archivo_pdf"
+              class="form-control"
+              accept="application/pdf"
+            />
+            {% if editar_reserva and editar_reserva.archivo_pdf_url %}
+            <small class="text-white"
+              >Archivo actual:
+              <a
+                href="{{ editar_reserva.archivo_pdf_url }}"
+                target="_blank"
+                class="link-warning"
+                >Ver PDF</a
+              ></small
+            >
+            {% endif %}
+          </div>
         </div>
 
         <div class="mt-4">
-            <button type="submit" class="btn btn-custom me-2">
-                {% if editar_reserva %}Guardar cambios{% else %}Crear reserva{% endif %}
-            </button>
-            <a href="{{ url_for('gestionar_reservas') }}" class="btn btn-outline-light">Cancelar</a>
+          <button type="submit" class="btn btn-custom me-2">
+            {% if editar_reserva %}Guardar cambios{% else %}Crear reserva{%
+            endif %}
+          </button>
+          <a
+            href="{{ url_for('gestionar_reservas') }}"
+            class="btn btn-outline-light"
+            >Cancelar</a
+          >
         </div>
-    </form>
+      </form>
 
-    <hr class="my-5" />
+      <hr class="my-5" />
 
-    <h3>Mis reservas</h3>
-    <table class="table table-bordered table-hover text-white">
+      <h3>Mis reservas</h3>
+      <table class="table table-bordered table-hover text-white">
         <thead>
-            <tr>
-                <th>ID</th>
-                <th>Fecha viaje</th>
-                <th>Producto</th>
-                <th>Nombre pasajero</th>
-                <th>telefono pasajero</th>
-                <th>Precio total</th>
-                <th>Acciones</th>
-            </tr>
+          <tr>
+            <th>ID</th>
+            <th>Fecha viaje</th>
+            <th>Producto</th>
+            <th>Nombre pasajero</th>
+            <th>telefono pasajero</th>
+            <th>Precio total</th>
+            <th>Acciones</th>
+          </tr>
         </thead>
         <tbody>
-            {% for reserva in reservas %}
-            <tr>
-                <td>{{ reserva.id_localizador }}</td>
-                <td>{{ reserva.fecha_viaje }}</td>
-                <td>{{ reserva.producto }}</td>
-                <td>{{ reserva.nombre_pasajero }}</td>
-                <td>{{ reserva.telefono_pasajero }}</td>
-                <td>${{ "%.2f"|format(reserva.precio_venta_total) }}</td>
-                <td>
-                    <a href="{{ url_for('gestionar_reservas', editar=reserva.id) }}" class="btn btn-sm btn-warning me-2">Editar</a>
-                    <form action="{{ url_for('eliminar_reserva', id=reserva.id) }}" method="post" class="d-inline" onsubmit="return confirm('¿Seguro que quieres eliminar esta reserva?');">
-                        <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
-                    </form>
-                </td>
-            </tr>
-            {% else %}
-            <tr><td colspan="7" class="text-center">No hay reservas aún.</td></tr>
-            {% endfor %}
+          {% for reserva in reservas %}
+          <tr>
+            <td>{{ reserva.id_localizador }}</td>
+            <td>{{ reserva.fecha_viaje }}</td>
+            <td>{{ reserva.producto }}</td>
+            <td>{{ reserva.nombre_pasajero }}</td>
+            <td>{{ reserva.telefono_pasajero }}</td>
+            <td>${{ "%.2f"|format(reserva.precio_venta_total) }}</td>
+            <td>
+              <a
+                href="{{ url_for('gestionar_reservas', editar=reserva.id) }}"
+                class="btn btn-sm btn-warning me-2"
+                >Editar</a
+              >
+              <form
+                action="{{ url_for('eliminar_reserva', id=reserva.id) }}"
+                method="post"
+                class="d-inline"
+                onsubmit="return confirm('¿Seguro que quieres eliminar esta reserva?');"
+              >
+                <button type="submit" class="btn btn-sm btn-danger">
+                  Eliminar
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="7" class="text-center">No hay reservas aún.</td>
+          </tr>
+          {% endfor %}
         </tbody>
-    </table>
-</div>
+      </table>
+    </div>
 
-<footer>
-    <small>© 2025 Mi Aplicación de Reservas</small>
-</footer>
+    <footer>
+      <small>© 2025 Mi Aplicación de Reservas</small>
+    </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<script>
-function generarLocalizador() {
-    const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let resultado = '';
-    for (let i = 0; i < 12; i++) {
-        resultado += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
-    }
-    const input = document.getElementById('id_localizador');
-    const btn = document.getElementById('btn_generar');
-    input.value = resultado;
-    input.readOnly = true;     // Bloquear edición
-    btn.disabled = true;       // Deshabilitar botón
-}
-</script>
-
-</body>
+    <script>
+      function generarLocalizador() {
+        const caracteres =
+          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        let resultado = "";
+        for (let i = 0; i < 12; i++) {
+          resultado += caracteres.charAt(
+            Math.floor(Math.random() * caracteres.length)
+          );
+        }
+        const input = document.getElementById("id_localizador");
+        const btn = document.getElementById("btn_generar");
+        input.value = resultado;
+        input.readOnly = true; // Bloquear edición
+        btn.disabled = true; // Deshabilitar botón
+      }
+    </script>
+  </body>
 </html>

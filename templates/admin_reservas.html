@@ -1,62 +1,84 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} {% block content %}
 <div class="container mt-5 text-white">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>📋 Todas las Reservas - Panel Admin</h2>
-        <a href="{{ url_for('logout') }}" class="btn btn-outline-light">Cerrar sesión</a>
-    </div>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>📋 Todas las Reservas - Panel Admin</h2>
+    <a href="{{ url_for('logout') }}" class="btn btn-outline-light"
+      >Cerrar sesión</a
+    >
+  </div>
 
-    <table class="table table-bordered table-hover text-white align-middle">
-        <thead class="table-dark">
-            <tr>
-                <th>ID Localizador</th>
-                <th>Usuario</th>
-                <th>Fecha de Viaje</th>
-                <th>Producto</th>
-                <th>Pasajero</th>
-                <th>Teléfono</th>
-                <th>Precio Total</th>
-                <th class="text-center">Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for r in reservas %}
-            <tr>
-                <td>{{ r.id_localizador }}</td>
-                <td>{{ r.usuario.username }}</td>
-                <td>{{ r.fecha_viaje }}</td>
-                <td>{{ r.producto }}</td>
-                <td>{{ r.nombre_pasajero }}</td>
-                <td>{{ r.telefono_pasajero }}</td>
-                <td>${{ "%.2f"|format(r.precio_venta_total) }}</td>
-                <td class="text-center">
-                    {% set puede_editar = current_user.rol in ['admin', 'master'] or r.usuario_id == current_user.id %}
-                    {% if puede_editar %}
-                    <a href="{{ url_for('gestionar_reservas', editar=r.id) }}" class="btn btn-sm btn-warning me-2" title="Editar reserva">✏️ Editar</a>
-                    {% endif %}
-                    {% if current_user.rol in ['admin', 'master'] %}
-                    <form action="{{ url_for('eliminar_reserva', id=r.id) }}" method="post" style="display:inline;" onsubmit="return confirm('¿Eliminar esta reserva?')">
-                        <button type="submit" class="btn btn-sm btn-danger" title="Eliminar reserva">🗑 Eliminar</button>
-                    </form>
-                    {% endif %}
-                </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="8" class="text-center">No hay reservas registradas.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+  <table class="table table-bordered table-hover text-white align-middle">
+    <thead class="table-dark">
+      <tr>
+        <th>ID Localizador</th>
+        <th>Usuario</th>
+        <th>Fecha de Viaje</th>
+        <th>Producto</th>
+        <th>Pasajero</th>
+        <th>Teléfono</th>
+        <th>Precio Total</th>
+        <th class="text-center">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in reservas %}
+      <tr>
+        <td>{{ r.id_localizador }}</td>
+        <td>{{ r.usuario.username }}</td>
+        <td>{{ r.fecha_viaje }}</td>
+        <td>{{ r.producto }}</td>
+        <td>{{ r.nombre_pasajero }}</td>
+        <td>{{ r.telefono_pasajero }}</td>
+        <td>${{ "%.2f"|format(r.precio_venta_total) }}</td>
+        <td class="text-center">
+          {% set puede_editar = current_user.rol in ['admin', 'master'] or
+          r.usuario_id == current_user.id %} {% if puede_editar %}
+          <a
+            href="{{ url_for('gestionar_reservas', editar=r.id) }}"
+            class="btn btn-sm btn-warning me-2"
+            title="Editar reserva"
+            >✏️ Editar</a
+          >
+          {% endif %} {% if current_user.rol in ['admin', 'master'] %}
+          <form
+            action="{{ url_for('eliminar_reserva', id=r.id) }}"
+            method="post"
+            style="display: inline"
+            onsubmit="return confirm('¿Eliminar esta reserva?')"
+          >
+            <button
+              type="submit"
+              class="btn btn-sm btn-danger"
+              title="Eliminar reserva"
+            >
+              🗑 Eliminar
+            </button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="9" class="text-center">No hay reservas registradas.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 
-    <div class="mt-4 d-flex justify-content-between">
-        <a href="{{ url_for('admin_panel') }}" class="btn btn-secondary">← Volver al Panel Admin</a>
-        <div>
-            {% if current_user.rol in ['admin', 'master'] %}
-            <a href="{{ url_for('gestionar_reservas') }}" class="btn btn-custom me-2">+ Crear / Editar Reserva</a>
-            {% endif %}
-            <a href="{{ url_for('exportar_reservas') }}" class="btn btn-success">📤 Exportar a Excel</a>
-        </div>
+  <div class="mt-4 d-flex justify-content-between">
+    <a href="{{ url_for('admin_panel') }}" class="btn btn-secondary"
+      >← Volver al Panel Admin</a
+    >
+    <div>
+      {% if current_user.rol in ['admin', 'master'] %}
+      <a href="{{ url_for('gestionar_reservas') }}" class="btn btn-custom me-2"
+        >+ Crear / Editar Reserva</a
+      >
+      {% endif %}
+      <a href="{{ url_for('exportar_reservas') }}" class="btn btn-success"
+        >📤 Exportar a Excel</a
+      >
     </div>
+  </div>
 </div>
 {% endblock %}
