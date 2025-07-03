@@ -10,16 +10,18 @@ from functools import wraps
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 import pandas as pd
+from flask_migrate import Migrate
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'clave_secreta_segura')
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(basedir, 'usuarios.db')}"
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'usuarios.db'))
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'comprobantes')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
 
@@ -118,7 +120,7 @@ def crear_usuario_master():
             comision='',
             rol='master'
         )
-        master.password('Program3312')
+        master.password = 'Program3312'
         db.session.add(master)
         db.session.commit()
 
@@ -164,10 +166,10 @@ def guardar_comprobante(file, id_localizador):
 
 # ===== RUTAS =====
 
-@app.before_request
-def init_db():
-    db.create_all()
-    crear_usuario_master()
+# @app.before_request
+# def init_db():
+#     db.create_all()
+#     crear_usuario_master()
 
 @app.route('/')
 def home():
