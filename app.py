@@ -1,3 +1,4 @@
+# File: app.py
 import os
 import io
 import random
@@ -166,10 +167,6 @@ def guardar_comprobante(file, id_localizador):
 
 # ===== RUTAS =====
 
-# @app.before_request
-# def init_db():
-#     db.create_all()
-#     crear_usuario_master()
 
 @app.route('/')
 def home():
