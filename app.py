@@ -40,6 +40,23 @@ ALLOWED_EXTENSIONS = {'pdf'}
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB
 PER_PAGE = 10 # Constante para el número de elementos por página
 
+# Configuración de Flask-Mail
+app.config['MAIL_SERVER'] = 'smtp.example.com'  # Cambia esto por tu servidor SMTP
+app.config['MAIL_PORT'] = 587  # Puerto SMTP
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'your-email@example.com'  # Cambia esto por tu correo electrónico
+app.config['MAIL_PASSWORD'] = 'your-email-password'  # Cambia esto por tu contraseña de correo electrónico
+
+mail = Mail(app)
+
+# Configuración de itsdangerous
+serializer = URLSafeTimedSerializer(app.secret_key)
+
+# New constants for file validation
+ALLOWED_EXTENSIONS = {'pdf'}
+MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB
+PER_PAGE = 10 # Constante para el número de elementos por página
+
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 login_manager = LoginManager(app)
@@ -385,7 +402,27 @@ def gestionar_reservas():
         flash('Reserva guardada.', 'success')
         return redirect(url_for('gestionar_reservas'))
 
-    reservas = Reserva.query.all() if current_user.rol in ('admin', 'master') else Reserva.query.filter_by(usuario_id=current_user.id).all()
+    search_query = request.args.get('search', '').strip()
+
+    reservas_query = Reserva.query
+
+    if current_user.rol not in ('admin', 'master'):
+        reservas_query = reservas_query.filter_by(usuario_id=current_user.id)
+
+    if search_query:
+        reservas_query = reservas_query.filter(
+            db.or_(
+                Reserva.id_localizador.ilike(f'%{search_query}%'),
+                Reserva.producto.ilike(f'%{search_query}%'),
+                Reserva.nombre_pasajero.ilike(f'%{search_query}%'),
+                Reserva.destino.ilike(f'%{search_query}%'),
+                Reserva.nombre_ejecutivo.ilike(f'%{search_query}%')
+            )
+        )
+
+    page = request.args.get('page', 1, type=int)
+    reservas_paginated = reservas_query.paginate(page=page, per_page=PER_PAGE, error_out=False)
+    reservas = reservas_paginated.items
 
     editar_id = request.args.get('editar')
     editar_reserva = None
@@ -394,7 +431,7 @@ def gestionar_reservas():
         if reserva_a_editar and puede_editar_reserva(reserva_a_editar):
             editar_reserva = reserva_a_editar
 
-    return render_template('reservas.html', reservas=reservas, editar_reserva=editar_reserva)
+    return render_template('reservas.html', reservas=reservas, editar_reserva=editar_reserva, pagination=reservas_paginated, search_query=search_query)
 
 
 @app.route('/reservas/eliminar/<int:id>', methods=['POST'])
@@ -473,6 +510,46 @@ def descargar_comprobante(filename):
 def logout():
     logout_user()
     return redirect(url_for('login'))
+
+@app.route('/reset_password', methods=['GET', 'POST'])
+def reset_password_request():
+    if request.method == 'POST':
+        email = request.form['email']
+        user = Usuario.query.filter_by(correo=email).first()
+        if user:
+            token = serializer.dumps(email, salt='password-reset-salt')
+            reset_url = url_for('reset_password', token=token, _external=True)
+            send_reset_email(user, reset_url)
+            flash('Se ha enviado un correo electrónico con instrucciones para restablecer tu contraseña.', 'info')
+        else:
+            flash('No se encontró una cuenta con ese correo electrónico.', 'danger')
+    return render_template('reset_password_request.html')
+
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    try:
+        email = serializer.loads(token, salt='password-reset-salt', max_age=3600)
+    except:
+        flash('El enlace de restablecimiento de contraseña es inválido o ha expirado.', 'danger')
+        return redirect(url_for('reset_password_request'))
+
+    if request.method == 'POST':
+        password = request.form['password']
+        user = Usuario.query.filter_by(correo=email).first()
+        if user:
+            user.password = password
+            db.session.commit()
+            flash('Tu contraseña ha sido actualizada.', 'success')
+            return redirect(url_for('login'))
+    return render_template('reset_password.html')
+
+
+# Función para enviar el correo de restablecimiento
+
+def send_reset_email(user, reset_url):
+    msg = Message('Restablecer tu contraseña', sender='noreply@example.com', recipients=[user.correo])
+    msg.body = f'Para restablecer tu contraseña, haz clic en el siguiente enlace: {reset_url}'
+    mail.send(msg)
 
 
 if __name__ == '__main__':
