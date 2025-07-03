@@ -1,82 +1,106 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
+  <head>
     <meta charset="UTF-8" />
     <title>Iniciar sesión</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
     <style>
-        body {
-            background-color: #003366; /* Azul oscuro */
-            color: #FFFFFF; /* Blanco */
-        }
-        .card {
-            background-color: #004080; /* un poco más claro para la tarjeta */
-            border: none;
-        }
-        .form-label {
-            color: #FFFFFF;
-        }
-        .form-control {
-            background-color: #002244;
-            border: 1px solid #FF6600; /* borde naranja */
-            color: #FFFFFF;
-        }
-        .form-control:focus {
-            background-color: #002244;
-            color: #FFFFFF;
-            border-color: #FF6600;
-            box-shadow: 0 0 0 0.2rem rgba(255, 102, 0, 0.5);
-        }
-        .btn-custom {
-            background-color: #FF6600;
-            color: #FFFFFF;
-            border: none;
-        }
-        .btn-custom:hover, .btn-custom:focus {
-            background-color: #e65c00;
-            color: #FFFFFF;
-        }
-        .alert-danger {
-            background-color: #cc3300;
-            border-color: #cc3300;
-            color: #FFFFFF;
-        }
+      body {
+        background-color: #003366; /* Azul oscuro */
+        color: #ffffff; /* Blanco */
+      }
+      .card {
+        background-color: #004080; /* un poco más claro para la tarjeta */
+        border: none;
+      }
+      .form-label {
+        color: #ffffff;
+      }
+      .form-control {
+        background-color: #002244;
+        border: 1px solid #ff6600; /* borde naranja */
+        color: #ffffff;
+      }
+      .form-control:focus {
+        background-color: #002244;
+        color: #ffffff;
+        border-color: #ff6600;
+        box-shadow: 0 0 0 0.2rem rgba(255, 102, 0, 0.5);
+      }
+      .btn-custom {
+        background-color: #ff6600;
+        color: #ffffff;
+        border: none;
+      }
+      .btn-custom:hover,
+      .btn-custom:focus {
+        background-color: #e65c00;
+        color: #ffffff;
+      }
+      .alert-danger {
+        background-color: #cc3300;
+        border-color: #cc3300;
+        color: #ffffff;
+      }
     </style>
-</head>
-<body class="d-flex align-items-center" style="height: 100vh;">
+  </head>
+  <body class="d-flex align-items-center" style="height: 100vh">
     <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-4">
-                <div class="card shadow p-4">
-                    <h3 class="card-title text-center mb-4">Iniciar Sesión</h3>
+      <div class="row justify-content-center">
+        <div class="col-md-4">
+          <div class="card shadow p-4">
+            <h3 class="card-title text-center mb-4">Iniciar Sesión</h3>
 
-                    {% with messages = get_flashed_messages() %}
-                        {% if messages %}
-                            <div class="alert alert-danger" role="alert" aria-live="assertive" aria-atomic="true">
-                                <ul class="mb-0">
-                                {% for message in messages %}
-                                    <li>{{ message }}</li>
-                                {% endfor %}
-                                </ul>
-                            </div>
-                        {% endif %}
-                    {% endwith %}
-
-                    <form method="post" novalidate>
-                        <div class="mb-3">
-                            <label for="username" class="form-label">Usuario</label>
-                            <input type="text" class="form-control" name="username" id="username" required autofocus autocomplete="username" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Contraseña</label>
-                            <input type="password" class="form-control" name="password" id="password" required autocomplete="current-password" />
-                        </div>
-                        <button type="submit" class="btn btn-custom w-100">Ingresar</button>
-                    </form>
-                </div>
+            {% with messages = get_flashed_messages() %} {% if messages %}
+            <div
+              class="alert alert-danger"
+              role="alert"
+              aria-live="assertive"
+              aria-atomic="true"
+            >
+              <ul class="mb-0">
+                {% for message in messages %}
+                <li>{{ message }}</li>
+                {% endfor %}
+              </ul>
             </div>
+            {% endif %} {% endwith %}
+
+            <form method="post" novalidate>
+              <div class="mb-3">
+                <label for="username" class="form-label">Usuario</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  name="username"
+                  id="username"
+                  required
+                  autofocus
+                  autocomplete="username"
+                />
+              </div>
+              <div class="mb-3">
+                <label for="password" class="form-label">Contraseña</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  name="password"
+                  id="password"
+                  required
+                  autocomplete="current-password"
+                />
+              </div>
+              <button type="submit" class="btn btn-custom w-100">
+                Ingresar
+              </button>
+            </form>
+          </div>
         </div>
+      </div>
     </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
 </html>
