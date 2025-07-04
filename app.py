@@ -249,6 +249,15 @@ def login():
 def dashboard():
     return render_template('dashboard.html', nombre=current_user.nombre)
 
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('Has cerrado sesión correctamente.', 'info')
+    return redirect(url_for('login'))
+
+
+
 @app.route('/admin')
 @login_required
 @rol_required('admin', 'master')
