@@ -24,21 +24,7 @@ app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'comprobantes')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Configuración de Flask-Mail
-app.config['MAIL_SERVER'] = 'smtp.example.com'  # Cambia esto por tu servidor SMTP
-app.config['MAIL_PORT'] = 587  # Puerto SMTP
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'your-email@example.com'  # Cambia esto por tu correo electrónico
-app.config['MAIL_PASSWORD'] = 'your-email-password'  # Cambia esto por tu contraseña de correo electrónico
 
-mail = Mail(app)
-
-# Configuración de itsdangerous
-serializer = URLSafeTimedSerializer(app.secret_key)
-
-# New constants for file validation
-ALLOWED_EXTENSIONS = {'pdf'}
-MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB
-PER_PAGE = 10 # Constante para el número de elementos por página
 
 # Configuración de Flask-Mail
 app.config['MAIL_SERVER'] = 'smtp.example.com'  # Cambia esto por tu servidor SMTP
