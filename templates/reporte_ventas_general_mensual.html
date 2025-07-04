@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Reporte Ventas General Mensual</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        background-color: #003366;
+        color: #ffffff;
+        min-height: 100vh;
+        padding-top: 3rem;
+      }
+      .container {
+        max-width: 800px;
+        background-color: #002244;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(255, 102, 0, 0.5);
+      }
+      h2 {
+        color: #ff6600;
+        margin-bottom: 1.5rem;
+      }
+      .card {
+        background-color: #004080;
+        border: none;
+        color: #ffffff;
+      }
+      .card-header {
+        background-color: #002244;
+        font-weight: bold;
+      }
+      .btn-custom {
+        background-color: #ff6600;
+        color: #ffffff;
+        border: none;
+      }
+      .btn-custom:hover,
+      .btn-custom:focus {
+        background-color: #e65c00;
+        color: #ffffff;
+      }
+      a {
+        color: #ff6600;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+        color: #e65c00;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2 class="text-center">
+        Reporte Ventas General Mensual - {{ selected_mes_str }}
+      </h2>
+
+      <div class="mb-3">
+        <a
+          href="{{ url_for('reportes_gerencia', mes=selected_mes_str) }}"
+          class="btn btn-outline-light"
+        >
+          ← Volver a Reportes
+        </a>
+      </div>
+
+      <div class="card text-center">
+        <div class="card-header">Ganancia Total del Mes</div>
+        <div class="card-body">
+          <h3 class="card-title">${{ "%.2f"|format(ganancia_total_mes) }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

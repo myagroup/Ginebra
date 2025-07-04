@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Control Gestión de Clientes</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        background-color: #003366;
+        color: #ffffff;
+        min-height: 100vh;
+        padding-top: 3rem;
+      }
+      .container {
+        max-width: 1200px;
+        background-color: #002244;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(255, 102, 0, 0.5);
+      }
+      h2 {
+        color: #ff6600;
+        margin-bottom: 1.5rem;
+      }
+      .table thead {
+        background-color: #002244;
+      }
+      .table tbody tr:hover {
+        background-color: #004080;
+      }
+      .btn-custom {
+        background-color: #ff6600;
+        color: #ffffff;
+        border: none;
+      }
+      .btn-custom:hover,
+      .btn-custom:focus {
+        background-color: #e65c00;
+        color: #ffffff;
+      }
+      a {
+        color: #ff6600;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+        color: #e65c00;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2 class="text-center">Control Gestión de Clientes</h2>
+
+      <div class="mb-3">
+        <a
+          href="{{ url_for('gestion_ejecutivo_cliente', ejecutivo_id=ejecutivo_id, rango_fechas=rango_fechas_str) }}"
+          class="btn btn-outline-light"
+        >
+          ← Volver a Gestión
+        </a>
+      </div>
+
+      <table class="table table-bordered table-hover text-white align-middle">
+        <thead class="table-dark">
+          <tr>
+            <th>Estado de Pago</th>
+            <th>Nombre Pasajero</th>
+            <th>Teléfono Pasajero</th>
+            <th>Mail Pasajero</th>
+            <th>Destino</th>
+            <th>Producto</th>
+            <th>Fecha de Compra</th>
+            <th>Fecha de Viaje</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for reserva in reservas %}
+          <tr>
+            <td>{{ reserva.estado_pago }}</td>
+            <td>{{ reserva.nombre_pasajero }}</td>
+            <td>{{ reserva.telefono_pasajero }}</td>
+            <td>{{ reserva.mail_pasajero }}</td>
+            <td>{{ reserva.destino }}</td>
+            <td>{{ reserva.producto }}</td>
+            <td>{{ reserva.fecha_venta }}</td>
+            <td>{{ reserva.fecha_viaje }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="8" class="text-center">
+              No hay reservas para los filtros seleccionados.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reportes a Gerencia</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <style>
+        body {
+            background-color: #003366;
+            color: #FFFFFF;
+            min-height: 100vh;
+            padding-top: 3rem;
+        }
+        .container {
+            max-width: 900px;
+            background-color: #002244;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(255, 102, 0, 0.5);
+        }
+        label {
+            color: #FF6600;
+            font-weight: 600;
+        }
+        .form-control, .form-select {
+            background-color: #004080;
+            border: none;
+            color: #fff;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: #0059b3;
+            color: #fff;
+            box-shadow: 0 0 5px #FF6600;
+            border: 1px solid #FF6600;
+        }
+        .btn-custom {
+            background-color: #FF6600;
+            color: #FFFFFF;
+            border: none;
+        }
+        .btn-custom:hover, .btn-custom:focus {
+            background-color: #e65c00;
+            color: #FFFFFF;
+        }
+        a {
+            color: #FF6600;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+            color: #e65c00;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 class="mb-4 text-center">Reportes a Gerencia</h2>
+
+    <div class="mb-3">
+        <a href="{{ url_for('admin_panel') }}" class="btn btn-outline-light">
+            ← Volver al Panel de Administración
+        </a>
+    </div>
+
+    <form method="get" class="mb-4">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label for="mes" class="form-label">Seleccionar Mes</label>
+                <select class="form-select" id="mes" name="mes">
+                    {% for month_year in meses_anteriores %}
+                    <option value="{{ month_year }}" {% if selected_mes_str == month_year %}selected{% endif %}>{{ month_year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 text-center">
+                <button type="submit" class="btn btn-custom">Aplicar Filtro</button>
+            </div>
+        </div>
+    </form>
+
+    <hr class="my-4">
+
+    <div class="d-grid gap-2">
+        <a href="{{ url_for('reporte_detalle_ventas', mes=selected_mes_str) }}" class="btn btn-custom btn-lg">Reporte Detalle de Ventas</a>
+        <a href="{{ url_for('reporte_ventas_general_mensual', mes=selected_mes_str) }}" class="btn btn-custom btn-lg">Reporte Ventas General Mensual</a>
+        <a href="{{ url_for('ranking_ejecutivos', mes=selected_mes_str) }}" class="btn btn-custom btn-lg">Ranking de Ejecutivos</a>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
