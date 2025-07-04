@@ -24,9 +24,6 @@ app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'comprobantes')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Configuración de Flask-Mail
-
-
-# Configuración de Flask-Mail
 app.config['MAIL_SERVER'] = 'smtp.example.com'  # Cambia esto por tu servidor SMTP
 app.config['MAIL_PORT'] = 587  # Puerto SMTP
 app.config['MAIL_USE_TLS'] = True

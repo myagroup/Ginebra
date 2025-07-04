@@ -151,20 +151,23 @@
         </tbody>
       </table>
 
-      <div class="mt-4">
-        <a href="{{ url_for('admin_reservas') }}" class="btn btn-secondary me-2"
-          >📋 Ver todas las reservas</a
-        >
-        <a
-          href="{{ url_for('gestionar_reservas') }}"
-          class="btn btn-custom me-2"
-          >+ Crear / Editar reservas</a
-        >
-        <a href="{{ url_for('exportar_reservas') }}" class="btn btn-success"
-          >📤 Exportar reservas a Excel</a
-        >
+      <div class="mt-4 d-flex flex-wrap gap-2">
+        <a href="{{ url_for('admin_reservas') }}" class="btn btn-secondary">
+          📋 Ver todas las reservas
+        </a>
+        <a href="{{ url_for('gestionar_reservas') }}" class="btn btn-custom">
+          + Crear / Editar reservas
+        </a>
+        <a href="{{ url_for('exportar_reservas') }}" class="btn btn-success">
+          📤 Exportar reservas a Excel
+        </a>
+        <a href="{{ url_for('reportes_gerencia') }}" class="btn btn-custom">
+          📈 Reportes a Gerencia
+        </a>
+        <a href="{{ url_for('gestion_ejecutivo_cliente') }}" class="btn btn-custom">
+          👥 Gestión Ejecutivo/Cliente
+        </a>
       </div>
-    </div>
 
     <footer>
       <small>© 2025 Mi Aplicación de Reservas</small>
