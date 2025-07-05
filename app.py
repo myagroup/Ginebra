@@ -1009,6 +1009,8 @@ def reporte_ventas_general_mensual():
     except Exception:
         return render_template('reporte_ventas_general_mensual.html',
                                ganancia_total_mes=0.0,
+                               comision_total_ejecutivos=0.0,
+                               comision_total_agencia=0.0,
                                selected_mes_str=selected_mes_str,
                                meses_anteriores=meses_anteriores,
                                datos_estado_pago=[0, 0],
