@@ -859,3 +859,100 @@ def reporte_detalle_ventas():
                            totales=totales,
                            selected_mes_str=selected_mes_str,
                            meses_anteriores=meses_anteriores)
+
+@app.route('/reporte_ventas_general_mensual')
+@login_required
+@rol_required('admin', 'master')
+def reporte_ventas_general_mensual():
+    meses_anteriores = []
+    today = datetime.now()
+    for i in range(12):
+        month = today.month - i
+        year = today.year
+        if month <= 0:
+            month += 12
+            year -= 1
+        meses_anteriores.append(datetime(year, month, 1).strftime('%B %Y'))
+    meses_anteriores.reverse()
+
+    selected_mes_str = request.args.get('mes', '')
+    try:
+        month_name, year_str = selected_mes_str.split(' ')
+        month_num = datetime.strptime(month_name, '%B').month
+        year = int(year_str)
+        start_date = datetime(year, month_num, 1)
+        if month_num == 12:
+            end_date = datetime(year + 1, 1, 1) - timedelta(days=1)
+        else:
+            end_date = datetime(year, month_num + 1, 1) - timedelta(days=1)
+    except Exception:
+        return render_template('reporte_ventas_general_mensual.html',
+                               ganancia_total_mes=0.0,
+                               selected_mes_str=selected_mes_str,
+                               meses_anteriores=meses_anteriores,
+                               datos_estado_pago=[0, 0],
+                               datos_venta_cobrada=[0, 0],
+                               datos_venta_emitida=[0, 0])
+
+    reservas_query = Reserva.query.join(Usuario).filter(
+        Reserva.fecha_venta >= start_date.strftime('%Y-%m-%d'),
+        Reserva.fecha_venta <= end_date.strftime('%Y-%m-%d')
+    )
+
+    ganancia_total_mes = 0.0
+    # Inicializar contadores para los gráficos
+    pagado = 0
+    no_pagado = 0
+    cobrada = 0
+    no_cobrada = 0
+    emitida = 0
+    no_emitida = 0
+
+    for reserva in reservas_query.all():
+        comision_ejecutivo_porcentaje = 0.0
+        if reserva.usuario.comision and reserva.usuario.comision.replace('.', '', 1).isdigit():
+            comision_ejecutivo_porcentaje = float(reserva.usuario.comision) / 100.0
+        total_neto = (
+            reserva.hotel_neto +
+            reserva.vuelo_neto +
+            reserva.traslado_neto +
+            reserva.seguro_neto +
+            reserva.circuito_neto +
+            reserva.crucero_neto +
+            reserva.excursion_neto +
+            reserva.paquete_neto
+        )
+        ganancia_bruta = reserva.precio_venta_total - total_neto
+        comision_usuario = ganancia_bruta * comision_ejecutivo_porcentaje
+        ganancia_neta = ganancia_bruta - comision_usuario
+        ganancia_total_mes += ganancia_neta
+
+        # Estado de pago
+        if (reserva.estado_pago or '').strip().lower() == 'pagado':
+            pagado += 1
+        else:
+            no_pagado += 1
+        # Venta cobrada
+        if (reserva.venta_cobrada or '').strip().lower() == 'cobrada':
+            cobrada += 1
+        else:
+            no_cobrada += 1
+        # Venta emitida
+        if (reserva.venta_emitida or '').strip().lower() == 'emitida':
+            emitida += 1
+        else:
+            no_emitida += 1
+
+    # Preparar datos como listas para los gráficos
+    datos_estado_pago = [pagado, no_pagado]
+    datos_venta_cobrada = [cobrada, no_cobrada]
+    datos_venta_emitida = [emitida, no_emitida]
+
+    return render_template('reporte_ventas_general_mensual.html',
+                           ganancia_total_mes=ganancia_total_mes,
+                           selected_mes_str=selected_mes_str,
+                           meses_anteriores=meses_anteriores,
+                           datos_estado_pago=datos_estado_pago,
+                           datos_venta_cobrada=datos_venta_cobrada,
+                           datos_venta_emitida=datos_venta_emitida
+    )
