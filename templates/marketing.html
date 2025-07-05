@@ -56,6 +56,12 @@
       <h2 class="text-center">Marketing</h2>
 
       <div class="mb-3">
+        <a href="{{ url_for('exportar_marketing', ejecutivo_id=selected_ejecutivo_id, rango_fechas=selected_rango_fechas) }}" class="btn btn-success">
+          Exportar a Excel
+        </a>
+      </div>
+
+      <div class="mb-3">
         <a href="{{ url_for('admin_panel') }}" class="btn btn-outline-light">
           ← Volver al Panel de Administración
         </a>
