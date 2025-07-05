@@ -831,6 +831,7 @@ def reporte_detalle_ventas():
                                    'total_ventas_global': 0.0,
                                    'total_costos_global': 0.0,
                                    'total_comisiones_global': 0.0,
+                                   'total_bonos_global': 0.0,
                                    'total_ganancia_neta_global': 0.0,
                                    'total_ventas_realizadas_global': 0
                                },
@@ -862,6 +863,7 @@ def reporte_detalle_ventas():
         ganancia_bruta = reserva.precio_venta_total - total_neto
         comision_usuario = ganancia_bruta * comision_ejecutivo_porcentaje
         ganancia_neta = ganancia_bruta - comision_usuario
+        bonos = reserva.bonos or 0.0
 
         if ejecutivo_id not in reporte_data_dict:
             reporte_data_dict[ejecutivo_id] = {
@@ -871,12 +873,14 @@ def reporte_detalle_ventas():
                 'total_ventas': 0.0,
                 'total_costos': 0.0,
                 'total_comisiones': 0.0,
+                'total_bonos': 0.0,
                 'ganancia_neta': 0.0,
                 'num_ventas': 0
             }
         reporte_data_dict[ejecutivo_id]['total_ventas'] += reserva.precio_venta_total
         reporte_data_dict[ejecutivo_id]['total_costos'] += total_neto
         reporte_data_dict[ejecutivo_id]['total_comisiones'] += comision_usuario
+        reporte_data_dict[ejecutivo_id]['total_bonos'] += bonos
         reporte_data_dict[ejecutivo_id]['ganancia_neta'] += ganancia_neta
         reporte_data_dict[ejecutivo_id]['num_ventas'] += 1
 
@@ -887,6 +891,7 @@ def reporte_detalle_ventas():
         'total_ventas_global': sum(r['total_ventas'] for r in reporte_data),
         'total_costos_global': sum(r['total_costos'] for r in reporte_data),
         'total_comisiones_global': sum(r['total_comisiones'] for r in reporte_data),
+        'total_bonos_global': sum(r['total_bonos'] for r in reporte_data),
         'total_ganancia_neta_global': sum(r['ganancia_neta'] for r in reporte_data),
         'total_ventas_realizadas_global': sum(r['num_ventas'] for r in reporte_data)
     }
@@ -896,6 +901,86 @@ def reporte_detalle_ventas():
                            totales=totales,
                            selected_mes_str=selected_mes_str,
                            meses_anteriores=meses_anteriores)
+
+@app.route('/exportar_reporte_detalle_ventas')
+@login_required
+@rol_required('admin', 'master')
+def exportar_reporte_detalle_ventas():
+    selected_mes_str = request.args.get('mes', '')
+    try:
+        month_name, year_str = selected_mes_str.split(' ')
+        month_num = datetime.strptime(month_name, '%B').month
+        year = int(year_str)
+        start_date = datetime(year, month_num, 1)
+        if month_num == 12:
+            end_date = datetime(year + 1, 1, 1) - timedelta(days=1)
+        else:
+            end_date = datetime(year, month_num + 1, 1) - timedelta(days=1)
+    except Exception:
+        today = datetime.now()
+        start_date, end_date = today, today
+
+    reservas_query = Reserva.query.join(Usuario).filter(
+        Reserva.fecha_venta >= start_date.strftime('%Y-%m-%d'),
+        Reserva.fecha_venta <= end_date.strftime('%Y-%m-%d')
+    )
+
+    reporte_data_dict = {}
+    for reserva in reservas_query.all():
+        ejecutivo_id = reserva.nombre_ejecutivo or ''
+        correo_ejecutivo = reserva.correo_ejecutivo or ''
+        rol_ejecutivo = reserva.usuario.rol
+        comision_ejecutivo_porcentaje = safe_float(reserva.usuario.comision) / 100.0
+        total_neto = (
+            reserva.hotel_neto +
+            reserva.vuelo_neto +
+            reserva.traslado_neto +
+            reserva.seguro_neto +
+            reserva.circuito_neto +
+            reserva.crucero_neto +
+            reserva.excursion_neto +
+            reserva.paquete_neto
+        )
+        ganancia_bruta = reserva.precio_venta_total - total_neto
+        comision_usuario = ganancia_bruta * comision_ejecutivo_porcentaje
+        ganancia_neta = ganancia_bruta - comision_usuario
+        bonos = reserva.bonos or 0.0
+
+        if ejecutivo_id not in reporte_data_dict:
+            reporte_data_dict[ejecutivo_id] = {
+                'Ejecutivo': ejecutivo_id,
+                'Correo Ejecutivo': correo_ejecutivo,
+                'Rol Ejecutivo': rol_ejecutivo,
+                'Total Ventas': 0.0,
+                'Total Costos': 0.0,
+                'Total Comisiones Ejecutivo': 0.0,
+                'Total Bonos': 0.0,
+                'Total Ganancia': 0.0,
+                'N° de Ventas Realizadas': 0
+            }
+        reporte_data_dict[ejecutivo_id]['Total Ventas'] += reserva.precio_venta_total
+        reporte_data_dict[ejecutivo_id]['Total Costos'] += total_neto
+        reporte_data_dict[ejecutivo_id]['Total Comisiones Ejecutivo'] += comision_usuario
+        reporte_data_dict[ejecutivo_id]['Total Bonos'] += bonos
+        reporte_data_dict[ejecutivo_id]['Total Ganancia'] += ganancia_neta
+        reporte_data_dict[ejecutivo_id]['N° de Ventas Realizadas'] += 1
+
+    reporte_data = list(reporte_data_dict.values())
+
+    import pandas as pd
+    import io
+    output = io.BytesIO()
+    df = pd.DataFrame(reporte_data)
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Detalle Ventas')
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name='reporte_detalle_ventas.xlsx',
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
 
 @app.route('/reporte_ventas_general_mensual')
 @login_required

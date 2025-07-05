@@ -15,6 +15,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import pandas as pd
 from flask_migrate import Migrate
 
+# =====================
+# CONFIGURACIÓN INICIAL
+# =====================
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'clave_secreta_segura')
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -29,7 +32,6 @@ app.config['MAIL_PORT'] = 587  # Puerto SMTP
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = 'your-email@example.com'  # Cambia esto por tu correo electrónico
 app.config['MAIL_PASSWORD'] = 'your-email-password'  # Cambia esto por tu contraseña de correo electrónico
-
 mail = Mail(app)
 
 # Configuración de itsdangerous
@@ -45,8 +47,9 @@ migrate = Migrate(app, db)
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
 
-# ===== MODELOS =====
-
+# =====================
+# MODELOS DE BASE DE DATOS
+# =====================
 class Usuario(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
@@ -91,10 +94,12 @@ class Reserva(db.Model):
     Ganancia_total =  db.Column(db.Float, default=0.0)
     comision_ejecutivo = db.Column(db.Float, default=0.0)
     comision_agencia = db.Column(db.Float, default=0.0)  # Nueva columna para comisión de la agencia
+    bonos = db.Column(db.Float, default=0.0)
     localizadores = db.Column(db.String(200))
     nombre_ejecutivo = db.Column(db.String(100))
     correo_ejecutivo = db.Column(db.String(100))
     destino = db.Column(db.String(100))
+    comentarios = db.Column(db.String(100))    
     comprobante_venta = db.Column(db.String(200))
     estado_pago = db.Column(db.String(50), default='No Pagado')
     venta_cobrada = db.Column(db.String(50), default='No cobrada')
@@ -102,15 +107,12 @@ class Reserva(db.Model):
 
     usuario = db.relationship('Usuario', backref=db.backref('reservas', lazy=True))
 
-
-# ===== LOGIN MANAGER =====
-
+# =====================
+# LOGIN MANAGER Y DECORADORES
+# =====================
 @login_manager.user_loader
 def load_user(user_id):
     return Usuario.query.get(int(user_id))
-
-
-# ===== DECORADORES =====
 
 def rol_required(*roles):
     def decorator(f):
@@ -123,9 +125,9 @@ def rol_required(*roles):
         return wrapped
     return decorator
 
-
-# ===== FUNCIONES AUXILIARES =====
-
+# =====================
+# FUNCIONES AUXILIARES
+# =====================
 def puede_editar_reserva(reserva):
     return current_user.rol in ('admin', 'master') or reserva.usuario_id == current_user.id
 
@@ -186,14 +188,19 @@ def set_reserva_fields(reserva, form):
     campos_float = [
         'precio_venta_total', 'hotel_neto', 'vuelo_neto', 'traslado_neto', 'paquete_neto',
         'seguro_neto', 'circuito_neto', 'crucero_neto', 'excursion_neto', 'Ganancia_total',
-        'comision_ejecutivo', 'comision_agencia'  # Agregados los nuevos campos
+        'comision_ejecutivo', 'comision_agencia', 'bonos'  # Agregados los nuevos campos
     ]
     campos_str = [
         'fecha_viaje', 'producto', 'modalidad_pago',
         'nombre_pasajero', 'telefono_pasajero', 'mail_pasajero',
         'localizadores', 'nombre_ejecutivo', 'correo_ejecutivo', 'destino',
-        'estado_pago', 'venta_cobrada', 'venta_emitida'  # Agregados los nuevos campos
+        'estado_pago', 'venta_cobrada', 'venta_emitida', 'comentarios'  # Agregados los nuevos campos
     ]
+
+    comision_ejecutivo, comision_agencia, ganancia_total = calcular_comisiones(reserva, reserva.usuario)
+    reserva.comision_ejecutivo = comision_ejecutivo
+    reserva.comision_agencia = comision_agencia
+    reserva.ganancia_total = ganancia_total
 
     for campo in campos_float:
         try:
@@ -252,9 +259,32 @@ def safe_float(val):
     except Exception:
         return 0.0
 
+def send_reset_email(user, reset_url):
+    msg = Message('Restablecer tu contraseña', sender='noreply@example.com', recipients=[user.correo])
+    msg.body = f'Para restablecer tu contraseña, haz clic en el siguiente enlace: {reset_url}'
+    mail.send(msg)
 
-# ===== RUTAS =====
+def calcular_comisiones(reserva, usuario):
+    """Calcula y asigna la comisión del ejecutivo y de la agencia."""
+    comision_ejecutivo_porcentaje = safe_float(usuario.comision) / 100.0
+    total_neto = (
+        reserva.hotel_neto +
+        reserva.vuelo_neto +
+        reserva.traslado_neto +
+        reserva.seguro_neto +
+        reserva.circuito_neto +
+        reserva.crucero_neto +
+        reserva.excursion_neto +
+        reserva.paquete_neto
+    )
+    ganancia_total = reserva.precio_venta_total - total_neto
+    comision_ejecutivo = ganancia_total * comision_ejecutivo_porcentaje
+    comision_agencia = ganancia_total - comision_ejecutivo
+    return comision_ejecutivo, comision_agencia, ganancia_total
 
+# =====================
+# RUTAS DE FLASK
+# =====================
 
 @app.route('/')
 def home():
@@ -526,10 +556,12 @@ def exportar_reservas():
         'Ganancia Total': r.Ganancia_total,
         'Comisión Ejecutivo': r.comision_ejecutivo,
         'Comisión Agencia': r.comision_agencia,
+        'Bonos': r.bonos,
+        'Comentarios': r.comentarios,
         'Localizadores': r.localizadores,
         'Nombre ejecutivo': r.nombre_ejecutivo,
         'Correo ejecutivo': r.correo_ejecutivo,
-        'Destino': r.destino,
+        'Destino': r.destino,        
         'Estado de pago': r.estado_pago,           # Nuevo campo en exportación
         'Venta cobrada': r.venta_cobrada,          # Nuevo campo en exportación
         'Venta emitida': r.venta_emitida           # Nuevo campo en exportación
@@ -591,6 +623,48 @@ def control_gestion_clientes():
                            meses_anteriores=meses_anteriores,
                            selected_ejecutivo_id=ejecutivo_id,
                            selected_rango_fechas=rango_fechas_str)
+
+@app.route('/reservas_usuarios')
+@login_required
+def reservas_usuarios():
+    # Generar lista de meses anteriores (12 meses)
+    meses_anteriores = []
+    today = datetime.now()
+    for i in range(12):
+        month = today.month - i
+        year = today.year
+        if month <= 0:
+            month += 12
+            year -= 1
+        meses_anteriores.append(datetime(year, month, 1).strftime('%B %Y'))
+    meses_anteriores.reverse()
+
+    # Obtener mes seleccionado
+    selected_mes_str = request.args.get('mes', meses_anteriores[-1] if meses_anteriores else '')
+    try:
+        start_date, end_date = _get_date_range(selected_mes_str)
+    except Exception:
+        start_date, end_date = today, today
+
+    # Filtrar reservas por usuario y mes
+    reservas = Reserva.query.filter(
+        Reserva.usuario_id == current_user.id,
+        Reserva.fecha_venta >= start_date.strftime('%Y-%m-%d'),
+        Reserva.fecha_venta <= end_date.strftime('%Y-%m-%d')
+    ).all()
+
+    # Calcular totales
+    total_ventas = sum(r.precio_venta_total or 0 for r in reservas)
+    total_comision_ejecutivo = sum(r.comision_ejecutivo or 0 for r in reservas)
+
+    return render_template(
+        'reservas_usuarios.html',
+        reservas=reservas,
+        meses_anteriores=meses_anteriores,
+        selected_mes_str=selected_mes_str,
+        total_ventas=total_ventas,
+        total_comision_ejecutivo=total_comision_ejecutivo
+    )
 
 @app.route('/panel_comisiones')
 @login_required
@@ -950,15 +1024,6 @@ def reset_password(token):
             return redirect(url_for('login'))
     return render_template('reset_password.html')
 
-
-# Función para enviar el correo de restablecimiento
-
-def send_reset_email(user, reset_url):
-    msg = Message('Restablecer tu contraseña', sender='noreply@example.com', recipients=[user.correo])
-    msg.body = f'Para restablecer tu contraseña, haz clic en el siguiente enlace: {reset_url}'
-    mail.send(msg)
-
-
 @app.route('/marketing')
 @login_required
 @rol_required('admin', 'master')
@@ -1009,6 +1074,78 @@ def marketing():
                            meses_anteriores=meses_anteriores,
                            selected_ejecutivo_id=ejecutivo_id,
                            selected_rango_fechas=rango_fechas_str)
+
+@app.route('/exportar_reservas_usuario')
+@login_required
+def exportar_reservas_usuario():
+    # Obtener mes seleccionado
+    meses_anteriores = []
+    today = datetime.now()
+    for i in range(12):
+        month = today.month - i
+        year = today.year
+        if month <= 0:
+            month += 12
+            year -= 1
+        meses_anteriores.append(datetime(year, month, 1).strftime('%B %Y'))
+    meses_anteriores.reverse()
+
+    selected_mes_str = request.args.get('mes', meses_anteriores[-1] if meses_anteriores else '')
+    try:
+        start_date, end_date = _get_date_range(selected_mes_str)
+    except Exception:
+        start_date, end_date = today, today
+
+    reservas = Reserva.query.filter(
+        Reserva.usuario_id == current_user.id,
+        Reserva.fecha_venta >= start_date.strftime('%Y-%m-%d'),
+        Reserva.fecha_venta <= end_date.strftime('%Y-%m-%d')
+    ).all()
+
+    data = [{
+        'ID Localizador': r.id_localizador,
+        'Fecha de venta': r.fecha_venta,
+        'Fecha de viaje': r.fecha_viaje,
+        'Producto': r.producto,
+        'Modalidad de pago': r.modalidad_pago,
+        'Nombre de pasajero': r.nombre_pasajero,
+        'Teléfono de pasajero': r.telefono_pasajero,
+        'Mail Pasajero': r.mail_pasajero,
+        'Precio venta total': r.precio_venta_total,
+        'Hotel neto': r.hotel_neto,
+        'Vuelo neto': r.vuelo_neto,
+        'Traslado neto': r.traslado_neto,
+        'Seguro neto': r.seguro_neto,
+        'Circuito Neto': r.circuito_neto,
+        'Crucero Neto': r.crucero_neto,
+        'Excursion Neto': r.excursion_neto,
+        'Paquete Neto': r.paquete_neto,
+        'Ganancia Total': r.Ganancia_total,
+        'Comisión Ejecutivo': r.comision_ejecutivo,
+        'Comisión Agencia': r.comision_agencia,
+        'Bonos': r.bonos,
+        'Comentarios': r.comentarios,
+        'Localizadores': r.localizadores,
+        'Nombre ejecutivo': r.nombre_ejecutivo,
+        'Correo ejecutivo': r.correo_ejecutivo,
+        'Destino': r.destino,
+        'Estado de pago': r.estado_pago,
+        'Venta cobrada': r.venta_cobrada,
+        'Venta emitida': r.venta_emitida
+    } for r in reservas]
+
+    df = pd.DataFrame(data)
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Reservas')
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name='mis_reservas.xlsx',
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
 
 if __name__ == '__main__':
     app.run(debug=True)

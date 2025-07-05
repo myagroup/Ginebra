@@ -79,6 +79,7 @@
           </div>
           <div class="col-12 text-center">
             <button type="submit" class="btn btn-custom">Aplicar Filtro</button>
+            <a href="{{ url_for('exportar_reporte_detalle_ventas', mes=selected_mes_str) }}" class="btn btn-success ms-2">Exportar a Excel</a>
           </div>
         </div>
       </form>
@@ -89,8 +90,9 @@
             <th>Ejecutivo</th>
             <th>Total Ventas</th>
             <th>Total Costos</th>
-            <th>Total Comisiones</th>
-            <th>Ganancia Neta por Ejecutivo</th>
+            <th>Total Comisiones Ejecutivo</th>
+            <th>Total Bonos</th>
+            <th>Total Ganancia</th>
             <th>N° de Ventas Realizadas</th>
           </tr>
         </thead>
@@ -105,6 +107,7 @@
             <td>${{ "%.2f"|format(data.total_ventas) }}</td>
             <td>${{ "%.2f"|format(data.total_costos) }}</td>
             <td>${{ "%.2f"|format(data.total_comisiones) }}</td>
+            <td>${{ "%.2f"|format(data.total_bonos) }}</td>
             <td>${{ "%.2f"|format(data.ganancia_neta) }}</td>
             <td>{{ data.num_ventas }}</td>
           </tr>
@@ -122,6 +125,7 @@
             <td>${{ "%.2f"|format(totales.total_ventas_global) }}</td>
             <td>${{ "%.2f"|format(totales.total_costos_global) }}</td>
             <td>${{ "%.2f"|format(totales.total_comisiones_global) }}</td>
+            <td>${{ "%.2f"|format(totales.total_bonos_global) }}</td>
             <td>${{ "%.2f"|format(totales.total_ganancia_neta_global) }}</td>
             <td>{{ totales.total_ventas_realizadas_global }}</td>
           </tr>
