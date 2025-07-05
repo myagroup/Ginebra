@@ -82,10 +82,30 @@
         </div>
       </form>
 
-      <div class="card text-center">
-        <div class="card-header">Ganancia Total del Mes</div>
-        <div class="card-body">
-          <h3 class="card-title">${{ "%.2f"|format(ganancia_total_mes) }}</h3>
+      <div class="row g-4 mb-4">
+        <div class="col-md-4">
+          <div class="card text-center">
+            <div class="card-header">Ganancia Total del Mes</div>
+            <div class="card-body">
+              <h3 class="card-title">${{ "%.2f"|format(ganancia_total_mes) }}</h3>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card text-center">
+            <div class="card-header">Comisión Total Ejecutivos</div>
+            <div class="card-body">
+              <h3 class="card-title">${{ "%.2f"|format(comision_total_ejecutivos) }}</h3>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card text-center">
+            <div class="card-header">Comisión Total Agencia</div>
+            <div class="card-body">
+              <h3 class="card-title">${{ "%.2f"|format(comision_total_agencia) }}</h3>
+            </div>
+          </div>
         </div>
       </div>
 

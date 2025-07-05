@@ -767,7 +767,7 @@ def ranking_ejecutivos():
 
     ranking_data = {}
     for reserva in reservas_query.all():
-        # Revertido: Agrupar por nombre_ejecutivo
+        # Agrupar por nombre_ejecutivo
         key = reserva.nombre_ejecutivo or ''
         if key not in ranking_data:
             ranking_data[key] = {
@@ -775,7 +775,6 @@ def ranking_ejecutivos():
                 'num_ventas': 0,
                 'ganancia_bruta': 0.0
             }
-        comision_ejecutivo_porcentaje = safe_float(reserva.usuario.comision) / 100.0
         total_neto = (
             reserva.hotel_neto +
             reserva.vuelo_neto +
@@ -786,9 +785,9 @@ def ranking_ejecutivos():
             reserva.excursion_neto +
             reserva.paquete_neto
         )
-        reserva.usuario.Ganancia_bruta = reserva.precio_venta_total - total_neto
+        ganancia_bruta = reserva.precio_venta_total - total_neto
         ranking_data[key]['num_ventas'] += 1
-        ranking_data[key]['ganancia_bruta'] += reserva.usuario.Ganancia_bruta
+        ranking_data[key]['ganancia_bruta'] += ganancia_bruta
 
     ranking_final = list(ranking_data.values())
     ranking_final.sort(key=lambda x: x['ganancia_bruta'], reverse=True)
@@ -1021,7 +1020,10 @@ def reporte_ventas_general_mensual():
         Reserva.fecha_venta <= end_date.strftime('%Y-%m-%d')
     )
 
-    ganancia_total_mes = 0.0
+    total_ventas_mes = 0.0
+    total_costos_mes = 0.0
+    comision_total_ejecutivos = 0.0
+    comision_total_agencia = 0.0
     # Inicializar contadores para los gráficos
     pagado = 0
     no_pagado = 0
@@ -1042,10 +1044,10 @@ def reporte_ventas_general_mensual():
             reserva.excursion_neto +
             reserva.paquete_neto
         )
-        ganancia_bruta = reserva.precio_venta_total - total_neto
-        comision_usuario = ganancia_bruta * comision_ejecutivo_porcentaje
-        ganancia_neta = ganancia_bruta - comision_usuario
-        ganancia_total_mes += ganancia_neta
+        total_ventas_mes += reserva.precio_venta_total or 0
+        total_costos_mes += total_neto or 0
+        comision_total_ejecutivos += reserva.comision_ejecutivo or 0
+        comision_total_agencia += reserva.comision_agencia or 0
 
         # Estado de pago
         if (reserva.estado_pago or '').strip().lower() == 'pagado':
@@ -1063,6 +1065,8 @@ def reporte_ventas_general_mensual():
         else:
             no_emitida += 1
 
+    ganancia_total_mes = total_ventas_mes - total_costos_mes
+
     # Preparar datos como listas para los gráficos
     datos_estado_pago = [pagado, no_pagado]
     datos_venta_cobrada = [cobrada, no_cobrada]
@@ -1070,6 +1074,8 @@ def reporte_ventas_general_mensual():
 
     return render_template('reporte_ventas_general_mensual.html',
                            ganancia_total_mes=ganancia_total_mes,
+                           comision_total_ejecutivos=comision_total_ejecutivos,
+                           comision_total_agencia=comision_total_agencia,
                            selected_mes_str=selected_mes_str,
                            meses_anteriores=meses_anteriores,
                            datos_estado_pago=datos_estado_pago,
