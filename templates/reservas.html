@@ -399,12 +399,12 @@
               >Correo ejecutivo</label
             >
             <input
-              type="email"
+              type="text"
               id="correo_ejecutivo"
               class="form-control"
               name="correo_ejecutivo"
-              value="{{ editar_reserva.correo_ejecutivo if editar_reserva else current_user.email }}"
-              autocomplete="email"
+              value="{{ editar_reserva.correo_ejecutivo if editar_reserva else current_user.correo }}"
+              autocomplete="off"
             />
           </div>
 
