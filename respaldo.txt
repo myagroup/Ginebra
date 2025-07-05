@@ -91,7 +91,7 @@ class Reserva(db.Model):
     id_localizador = db.Column(db.String(100), unique=True, nullable=False)
     fecha_viaje = db.Column(db.String(50))
     producto = db.Column(db.String(100))
-    fecha_venta = db.Column(db.String(50))
+    fecha_venta = db.Column(db.Date, nullable=True)  # Cambiado a Date
     modalidad_pago = db.Column(db.String(50))
     nombre_pasajero = db.Column(db.String(100))
     telefono_pasajero = db.Column(db.String(50))
@@ -105,11 +105,18 @@ class Reserva(db.Model):
     crucero_neto = db.Column(db.Float, default=0.0)
     excursion_neto = db.Column(db.Float, default=0.0)
     paquete_neto = db.Column(db.Float, default=0.0)
+    Ganancia_total =  db.Column(db.Float, default=0.0)
+    comision_ejecutivo = db.Column(db.Float, default=0.0)
+    comision_agencia = db.Column(db.Float, default=0.0)  # Nueva columna para comisión de la agencia
     localizadores = db.Column(db.String(200))
     nombre_ejecutivo = db.Column(db.String(100))
     correo_ejecutivo = db.Column(db.String(100))
     destino = db.Column(db.String(100))
     comprobante_venta = db.Column(db.String(200))
+    estado_pago = db.Column(db.String(50), default='No Pagado')
+    venta_cobrada = db.Column(db.String(50), default='No cobrada')
+    venta_emitida = db.Column(db.String(50), default='No emitida')
+
 
     usuario = db.relationship('Usuario', backref=db.backref('reservas', lazy=True))
 

@@ -242,16 +242,6 @@ def guardar_comprobante(file, id_localizador):
         return nombre_final, None
     return None, None
 
-def safe_float(val):
-    """Convierte un valor a float de forma segura, aceptando comas y espacios. Devuelve 0.0 si no es válido."""
-    if val is None:
-        return 0.0
-    try:
-        val = str(val).replace(',', '.').replace(' ', '').strip()
-        return float(val)
-    except Exception:
-        return 0.0
-
 
 # ===== RUTAS =====
 
@@ -621,8 +611,11 @@ def panel_comisiones():
 
     datos_comisiones = []
     for reserva in reservas:
+        # Revertido: Usar nombre_ejecutivo y correo_ejecutivo de la reserva
         ejecutivo = reserva.nombre_ejecutivo or ''
-        comision_ejecutivo_porcentaje = safe_float(reserva.usuario.comision) / 100.0
+        comision_ejecutivo_porcentaje = 0.0
+        if reserva.usuario.comision and reserva.usuario.comision.replace('.', '', 1).isdigit():
+            comision_ejecutivo_porcentaje = float(reserva.usuario.comision) / 100.0
         total_neto = (
             reserva.hotel_neto +
             reserva.vuelo_neto +
@@ -701,7 +694,9 @@ def ranking_ejecutivos():
                 'num_ventas': 0,
                 'ganancia_bruta': 0.0
             }
-        comision_ejecutivo_porcentaje = safe_float(reserva.usuario.comision) / 100.0
+        comision_ejecutivo_porcentaje = 0.0
+        if reserva.usuario.comision and reserva.usuario.comision.replace('.', '', 1).isdigit():
+            comision_ejecutivo_porcentaje = float(reserva.usuario.comision) / 100.0
         total_neto = (
             reserva.hotel_neto +
             reserva.vuelo_neto +
@@ -774,7 +769,9 @@ def reporte_detalle_ventas():
         ejecutivo_id = reserva.nombre_ejecutivo or ''
         correo_ejecutivo = reserva.correo_ejecutivo or ''
         rol_ejecutivo = reserva.usuario.rol
-        comision_ejecutivo_porcentaje = safe_float(reserva.usuario.comision) / 100.0
+        comision_ejecutivo_porcentaje = 0.0
+        if reserva.usuario.comision and reserva.usuario.comision.replace('.', '', 1).isdigit():
+            comision_ejecutivo_porcentaje = float(reserva.usuario.comision) / 100.0
         total_neto = (
             reserva.hotel_neto +
             reserva.vuelo_neto +
@@ -872,7 +869,9 @@ def reporte_ventas_general_mensual():
     no_emitida = 0
 
     for reserva in reservas_query.all():
-        comision_ejecutivo_porcentaje = safe_float(reserva.usuario.comision) / 100.0
+        comision_ejecutivo_porcentaje = 0.0
+        if reserva.usuario.comision and reserva.usuario.comision.replace('.', '', 1).isdigit():
+            comision_ejecutivo_porcentaje = float(reserva.usuario.comision) / 100.0
         total_neto = (
             reserva.hotel_neto +
             reserva.vuelo_neto +
