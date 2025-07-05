@@ -52,14 +52,18 @@
       <h1>🎉 Bienvenido, {{ nombre }}</h1>
 
       <a href="{{ url_for('gestionar_reservas') }}" class="btn btn-custom"
-        >Gestionar mis reservas</a
-      >
+        >Gestionar mis reservas</a>
 
-      {% if current_user.is_authenticated and current_user.rol in ['admin',
-      'master'] %}
-      <a href="{{ url_for('admin_panel') }}" class="btn btn-custom"
-        >Panel de Administración</a
-      >
+      {% if current_user.is_authenticated and current_user.rol == 'usuario' %}
+      <a href="{{ url_for('reservas_usuarios') }}" class="btn btn-custom">
+        Ver mis reservas mensuales
+      </a>
+      {% endif %}
+
+      {% if current_user.is_authenticated and current_user.rol in ['admin', 'master'] %}
+      <a href="{{ url_for('admin_panel') }}" class="btn btn-custom">
+        Panel de Administración
+      </a>
       {% endif %}
 
       <br />
