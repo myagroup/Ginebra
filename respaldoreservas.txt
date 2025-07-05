@@ -341,72 +341,20 @@
             />
           </div>
 
+          <!-- Paquete numérico -->
           <div class="col-md-6">
-            <label class="form-label" for="paquete_neto">Paquete neto</label>
+            <label class="form-label" for="paquete">Paquete</label>
             <input
               type="number"
               step="0.01"
-              id="paquete_neto"
+              id="paquete"
               class="form-control"
-              name="paquete_neto"
-              value="{{ editar_reserva.paquete_neto if editar_reserva else '' }}"
+              name="paquete"
+              value="{{ editar_reserva.paquete if editar_reserva else '' }}"
               autocomplete="off"
             />
           </div>
 
-          <div class="col-md-6">
-            <label class="form-label" for="comision_ejecutivo">Comisión ejecutivo</label>
-            <input
-              type="number"
-              step="0.01"
-              id="comision_ejecutivo"
-              class="form-control"
-              name="comision_ejecutivo"
-              value="{{ editar_reserva.comision_ejecutivo if editar_reserva else '' }}"
-              readonly
-            />
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label" for="comision_agencia">Comisión agencia</label>
-            <input
-              type="number"
-              step="0.01"
-              id="comision_agencia"
-              class="form-control"
-              name="comision_agencia"
-              value="{{ editar_reserva.comision_agencia if editar_reserva else '' }}"
-              readonly
-            />
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label" for="bonos">Bonos</label>
-            <input
-              type="number"
-              step="0.01"
-              id="bonos"
-              class="form-control"
-              name="bonos"
-              value="{{ editar_reserva.bonos if editar_reserva else '' }}"
-              autocomplete="off"
-            />
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label" for="comentarios">Comentarios</label>
-            <input
-              type="text"
-              id="comentarios"
-              class="form-control"
-              name="comentarios"
-              value="{{ editar_reserva.comentarios if editar_reserva else '' }}"
-              autocomplete="off"
-              required
-            />
-          </div>
-
-          
           <div class="col-md-6">
             <label class="form-label" for="destino">Destino</label>
             <input
@@ -460,29 +408,6 @@
             />
           </div>
 
-          <div class="col-md-6">
-            <label class="form-label" for="estado_pago">Estado de pago</label>
-            <select id="estado_pago" name="estado_pago" class="form-select">
-              <option value="No Pagado" {% if (editar_reserva and editar_reserva.estado_pago == 'No Pagado') or not editar_reserva %}selected{% endif %}>No pagado</option>
-              <option value="Pagado" {% if editar_reserva and editar_reserva.estado_pago == 'Pagado' %}selected{% endif %}>Pagado</option>
-            </select>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label" for="venta_cobrada">Venta cobrada</label>
-            <select id="venta_cobrada" name="venta_cobrada" class="form-select">
-              <option value="No cobrada" {% if (editar_reserva and editar_reserva.venta_cobrada == 'No cobrada') or not editar_reserva %}selected{% endif %}>Venta no cobrada</option>
-              <option value="Cobrada" {% if editar_reserva and editar_reserva.venta_cobrada == 'Cobrada' %}selected{% endif %}>Venta cobrada</option>
-            </select>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label" for="venta_emitida">Venta emitida</label>
-            <select id="venta_emitida" name="venta_emitida" class="form-select">
-              <option value="No emitida" {% if (editar_reserva and editar_reserva.venta_emitida == 'No emitida') or not editar_reserva %}selected{% endif %}>Venta no emitida</option>
-              <option value="Emitida" {% if editar_reserva and editar_reserva.venta_emitida == 'Emitida' %}selected{% endif %}>Venta emitida</option>
-            </select>
-          </div>
-        </div>
-
           <!-- Campo para subir PDF -->
           <div class="col-md-12">
             <label class="form-label" for="archivo_pdf"
@@ -508,6 +433,29 @@
             {% endif %}
           </div>
 
+          <div class="col-md-6">
+            <label class="form-label" for="estado_pago">Estado de pago</label>
+            <select id="estado_pago" name="estado_pago" class="form-select">
+              <option value="No Pagado" {% if (editar_reserva and editar_reserva.estado_pago == 'No Pagado') or not editar_reserva %}selected{% endif %}>No pagado</option>
+              <option value="Pagado" {% if editar_reserva and editar_reserva.estado_pago == 'Pagado' %}selected{% endif %}>Pagado</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="venta_cobrada">Venta cobrada</label>
+            <select id="venta_cobrada" name="venta_cobrada" class="form-select">
+              <option value="No cobrada" {% if (editar_reserva and editar_reserva.venta_cobrada == 'No cobrada') or not editar_reserva %}selected{% endif %}>Venta no cobrada</option>
+              <option value="Cobrada" {% if editar_reserva and editar_reserva.venta_cobrada == 'Cobrada' %}selected{% endif %}>Venta cobrada</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="venta_emitida">Venta emitida</label>
+            <select id="venta_emitida" name="venta_emitida" class="form-select">
+              <option value="No emitida" {% if (editar_reserva and editar_reserva.venta_emitida == 'No emitida') or not editar_reserva %}selected{% endif %}>Venta no emitida</option>
+              <option value="Emitida" {% if editar_reserva and editar_reserva.venta_emitida == 'Emitida' %}selected{% endif %}>Venta emitida</option>
+            </select>
+          </div>
+        </div>
+
         <div class="mt-4">
           <button type="submit" class="btn btn-custom me-2">
             {% if editar_reserva %}Guardar cambios{% else %}Crear reserva{%
@@ -523,6 +471,53 @@
 
       <hr class="my-5" />
 
+      <h3>Mis reservas</h3>
+      <table class="table table-bordered table-hover text-white">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Fecha viaje</th>
+            <th>Producto</th>
+            <th>Nombre pasajero</th>
+            <th>telefono pasajero</th>
+            <th>Precio total</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for reserva in reservas %}
+          <tr>
+            <td>{{ reserva.id_localizador }}</td>
+            <td>{{ reserva.fecha_viaje }}</td>
+            <td>{{ reserva.producto }}</td>
+            <td>{{ reserva.nombre_pasajero }}</td>
+            <td>{{ reserva.telefono_pasajero }}</td>
+            <td>${{ "%.2f"|format(reserva.precio_venta_total) }}</td>
+            <td>
+              <a
+                href="{{ url_for('gestionar_reservas', editar=reserva.id) }}"
+                class="btn btn-sm btn-warning me-2"
+                >Editar</a
+              >
+              <form
+                action="{{ url_for('eliminar_reserva', id=reserva.id) }}"
+                method="post"
+                class="d-inline"
+                onsubmit="return confirm('¿Seguro que quieres eliminar esta reserva?');"
+              >
+                <button type="submit" class="btn btn-sm btn-danger">
+                  Eliminar
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="7" class="text-center">No hay reservas aún.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
 
     <footer>
@@ -547,43 +542,6 @@
         input.readOnly = true; // Bloquear edición
         btn.disabled = true; // Deshabilitar botón
       }
-
-      function calcularComisiones() {
-        const precioVenta = parseFloat(document.getElementById('precio_venta_total').value) || 0;
-        const hotelNeto = parseFloat(document.getElementById('hotel_neto').value) || 0;
-        const vueloNeto = parseFloat(document.getElementById('vuelo_neto').value) || 0;
-        const trasladoNeto = parseFloat(document.getElementById('traslado_neto').value) || 0;
-        const seguroNeto = parseFloat(document.getElementById('seguro_neto').value) || 0;
-        const circuitoNeto = parseFloat(document.getElementById('circuito_neto').value) || 0;
-        const cruceroNeto = parseFloat(document.getElementById('crucero_neto').value) || 0;
-        const excursionNeto = parseFloat(document.getElementById('excursion_neto').value) || 0;
-        const paqueteNeto = parseFloat(document.getElementById('paquete_neto').value) || 0;
-        const comisionPorcentaje = parseFloat("{{ current_user.comision|default('0') }}") / 100;
-
-        const totalNeto = hotelNeto + vueloNeto + trasladoNeto + seguroNeto + circuitoNeto + cruceroNeto + excursionNeto + paqueteNeto;
-        const gananciaTotal = precioVenta - totalNeto;
-        const comisionEjecutivo = gananciaTotal * comisionPorcentaje;
-        const comisionAgencia = gananciaTotal - comisionEjecutivo;
-
-        document.getElementById('comision_ejecutivo').value = comisionEjecutivo.toFixed(2);
-        document.getElementById('comision_agencia').value = comisionAgencia.toFixed(2);
-      }
-
-      [
-        'precio_venta_total',
-        'hotel_neto',
-        'vuelo_neto',
-        'traslado_neto',
-        'seguro_neto',
-        'circuito_neto',
-        'crucero_neto',
-        'excursion_neto',
-        'paquete_neto'
-      ].forEach(function(id) {
-        var el = document.getElementById(id);
-        if (el) el.addEventListener('input', calcularComisiones);
-      });
-      window.onload = calcularComisiones;
     </script>
   </body>
 </html>
