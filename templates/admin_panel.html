@@ -161,12 +161,28 @@
         <a href="{{ url_for('exportar_reservas') }}" class="btn btn-success">
           📤 Exportar reservas a Excel
         </a>
-        <a href="{{ url_for('reportes_gerencia') }}" class="btn btn-custom">
-          📈 Reportes a Gerencia
-        </a>
-        <a href="{{ url_for('gestion_ejecutivo_cliente') }}" class="btn btn-custom">
-          👥 Gestión Ejecutivo/Cliente
-        </a>
+        <!-- Dropdown Reportes Gerencia -->
+        <div class="dropdown">
+          <button class="btn btn-custom dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            📈 Reportes a Gerencia
+          </button>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{{ url_for('reporte_detalle_ventas') }}">Reporte Detalle Ventas</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('reporte_ventas_general_mensual') }}">Reporte Ventas General Mensual</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('ranking_ejecutivos') }}">Ranking Ejecutivos</a></li>
+          </ul>
+        </div>
+        <!-- Dropdown Gestión Ejecutivo/Cliente -->
+        <div class="dropdown">
+          <button class="btn btn-custom dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            👥 Gestión Ejecutivo/Cliente
+          </button>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{{ url_for('control_gestion_clientes') }}">Control Gestión Cliente</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('panel_comisiones') }}">Panel Comisiones</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('marketing') }}">Marketing</a></li>
+          </ul>
+        </div>
       </div>
 
     <footer>

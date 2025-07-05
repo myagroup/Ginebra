@@ -61,6 +61,12 @@
       </h2>
 
       <div class="mb-3">
+        <a href="{{ url_for('admin_panel') }}" class="btn btn-outline-light">
+          ← Volver al Panel de Administración
+        </a>
+      </div>
+
+      <div class="mb-3">
         <a
           href="{{ url_for('reportes_gerencia', mes=selected_mes_str) }}"
           class="btn btn-outline-light"
@@ -68,6 +74,22 @@
           ← Volver a Reportes
         </a>
       </div>
+
+      <form method="get" class="mb-4">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-6">
+            <label for="mes" class="form-label">Seleccionar Mes</label>
+            <select class="form-select" id="mes" name="mes">
+              {% for month_year in meses_anteriores %}
+              <option value="{{ month_year }}" {% if selected_mes_str == month_year %}selected{% endif %}>{{ month_year }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12 text-center">
+            <button type="submit" class="btn btn-custom">Aplicar Filtro</button>
+          </div>
+        </div>
+      </form>
 
       <div class="card text-center">
         <div class="card-header">Ganancia Total del Mes</div>

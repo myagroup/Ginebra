@@ -56,6 +56,12 @@
       <h2 class="text-center">Marketing</h2>
 
       <div class="mb-3">
+        <a href="{{ url_for('admin_panel') }}" class="btn btn-outline-light">
+          ← Volver al Panel de Administración
+        </a>
+      </div>
+
+      <div class="mb-3">
         <a
           href="{{ url_for('gestion_ejecutivo_cliente', ejecutivo_id=ejecutivo_id, rango_fechas=rango_fechas_str) }}"
           class="btn btn-outline-light"
@@ -63,6 +69,32 @@
           ← Volver a Gestión
         </a>
       </div>
+
+      <form method="get" class="mb-4">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-6">
+            <label for="ejecutivo_id" class="form-label">Seleccionar Ejecutivo</label>
+            <select class="form-select" id="ejecutivo_id" name="ejecutivo_id">
+              <option value="">Todos los Ejecutivos</option>
+              {% for user in ejecutivos %}
+              <option value="{{ user.id }}" {% if user.id == selected_ejecutivo_id %}selected{% endif %}>{{ user.nombre }} {{ user.apellidos }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label for="rango_fechas" class="form-label">Rango de Fechas</label>
+            <select class="form-select" id="rango_fechas" name="rango_fechas">
+              <option value="ultimos_30_dias" {% if selected_rango_fechas == 'ultimos_30_dias' %}selected{% endif %}>Últimos 30 días</option>
+              {% for month_year in meses_anteriores %}
+              <option value="{{ month_year }}" {% if selected_rango_fechas == month_year %}selected{% endif %}>{{ month_year }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12 text-center">
+            <button type="submit" class="btn btn-custom">Aplicar Filtros</button>
+          </div>
+        </div>
+      </form>
 
       <table class="table table-bordered table-hover text-white align-middle">
         <thead class="table-dark">
