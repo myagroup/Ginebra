@@ -624,6 +624,53 @@ def control_gestion_clientes():
                            selected_ejecutivo_id=ejecutivo_id,
                            selected_rango_fechas=rango_fechas_str)
 
+@app.route('/exportar_control_gestion_clientes')
+@login_required
+@rol_required('admin', 'master')
+def exportar_control_gestion_clientes():
+    ejecutivo_id = request.args.get('ejecutivo_id', type=int)
+    rango_fechas_str = request.args.get('rango_fechas', 'ultimos_30_dias')
+
+    reservas_query = Reserva.query.join(Usuario)
+    if ejecutivo_id:
+        reservas_query = reservas_query.filter(Reserva.usuario_id == ejecutivo_id)
+    start_date, end_date = _get_date_range(rango_fechas_str)
+    reservas_query = reservas_query.filter(Reserva.fecha_venta >= start_date.strftime('%Y-%m-%d'),
+                                           Reserva.fecha_venta <= end_date.strftime('%Y-%m-%d'))
+    reservas = reservas_query.order_by(Reserva.fecha_venta.desc()).all()
+
+    data = [
+        {
+            'Ejecutivo': f"{r.nombre_ejecutivo}\n{r.correo_ejecutivo}",
+            'Estado de Pago': r.estado_pago,
+            'Venta Cobrada': r.venta_cobrada,
+            'Venta Emitida': r.venta_emitida,
+            'Nombre Pasajero': r.nombre_pasajero,
+            'Teléfono Pasajero': r.telefono_pasajero,
+            'Mail Pasajero': r.mail_pasajero,
+            'Destino': r.destino,
+            'Producto': r.producto,
+            'Fecha de Compra': r.fecha_venta,
+            'Fecha de Viaje': r.fecha_viaje
+        }
+        for r in reservas
+    ]
+
+    import pandas as pd
+    import io
+    output = io.BytesIO()
+    df = pd.DataFrame(data)
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Control Gestión Clientes')
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name='control_gestion_clientes.xlsx',
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
 @app.route('/reservas_usuarios')
 @login_required
 def reservas_usuarios():
@@ -707,16 +754,17 @@ def panel_comisiones():
             reserva.excursion_neto +
             reserva.paquete_neto
         )
-        reserva.usuario.Ganancia_total = reserva.precio_venta_total - total_neto
-        reserva.usuario.comision_ejecutivo = reserva.usuario.Ganancia_total * comision_ejecutivo_porcentaje
-        reserva.usuario.comision_agencia = reserva.usuario.Ganancia_total - reserva.usuario.comision_ejecutivo
+        ganancia_bruta = reserva.precio_venta_total - total_neto
+        comision_ejecutivo = ganancia_bruta * comision_ejecutivo_porcentaje
+        comision_agencia = ganancia_bruta - comision_ejecutivo
         datos_comisiones.append({
             'reserva': reserva,
             'ejecutivo': ejecutivo,
             'total_neto': total_neto,
-            'ganancia_total': reserva.usuario.Ganancia_total,
-            'comision_agencia': reserva.usuario.comision_agencia,
-            'comision_ejecutivo': reserva.usuario.comision_ejecutivo,
+            'ganancia_bruta': ganancia_bruta,
+            'ganancia_total': ganancia_bruta,
+            'comision_agencia': comision_agencia,
+            'comision_ejecutivo': comision_ejecutivo,
             'comision_ejecutivo_porcentaje': comision_ejecutivo_porcentaje * 100,
             })
     return render_template('panel_comisiones.html',

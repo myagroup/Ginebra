@@ -1046,10 +1046,14 @@ def reporte_ventas_general_mensual():
             reserva.excursion_neto +
             reserva.paquete_neto
         )
+        ganancia_bruta = reserva.precio_venta_total - total_neto
+        comision_usuario = ganancia_bruta * comision_ejecutivo_porcentaje
+        ganancia_neta = ganancia_bruta - comision_usuario
+
         total_ventas_mes += reserva.precio_venta_total or 0
         total_costos_mes += total_neto or 0
-        comision_total_ejecutivos += reserva.comision_ejecutivo or 0
-        comision_total_agencia += reserva.comision_agencia or 0
+        comision_total_ejecutivos += comision_usuario
+        comision_total_agencia += ganancia_neta
 
         # Estado de pago
         if (reserva.estado_pago or '').strip().lower() == 'pagado':
@@ -1167,6 +1171,48 @@ def marketing():
                            meses_anteriores=meses_anteriores,
                            selected_ejecutivo_id=ejecutivo_id,
                            selected_rango_fechas=rango_fechas_str)
+
+@app.route('/exportar_marketing')
+@login_required
+@rol_required('admin', 'master')
+def exportar_marketing():
+    ejecutivo_id = request.args.get('ejecutivo_id', type=int)
+    rango_fechas_str = request.args.get('rango_fechas', 'ultimos_30_dias')
+
+    reservas_query = Reserva.query.join(Usuario)
+    if ejecutivo_id:
+        reservas_query = reservas_query.filter(Reserva.usuario_id == ejecutivo_id)
+    start_date, end_date = _get_date_range(rango_fechas_str)
+    reservas_query = reservas_query.filter(Reserva.fecha_venta >= start_date.strftime('%Y-%m-%d'),
+                                           Reserva.fecha_venta <= end_date.strftime('%Y-%m-%d'))
+    reservas = reservas_query.order_by(Reserva.fecha_venta.desc()).all()
+
+    data = [
+        {
+            'Destino': r.destino,
+            'Fecha de venta': r.fecha_venta,
+            'Fecha de viaje': r.fecha_viaje,
+            'Nombre pasajero': r.nombre_pasajero,
+            'Teléfono pasajero': r.telefono_pasajero,
+            'Mail pasajero': r.mail_pasajero
+        }
+        for r in reservas
+    ]
+
+    import pandas as pd
+    import io
+    output = io.BytesIO()
+    df = pd.DataFrame(data)
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Marketing')
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name='marketing.xlsx',
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
 
 @app.route('/exportar_reservas_usuario')
 @login_required

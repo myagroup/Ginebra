@@ -83,6 +83,7 @@
           </div>
           <div class="col-12 text-center">
             <button type="submit" class="btn btn-custom">Aplicar Filtros</button>
+            <a href="{{ url_for('exportar_control_gestion_clientes', ejecutivo_id=selected_ejecutivo_id, rango_fechas=selected_rango_fechas) }}" class="btn btn-success ms-2">Exportar a Excel</a>
           </div>
         </div>
       </form>
@@ -92,6 +93,8 @@
           <tr>
             <th>Ejecutivo</th>
             <th>Estado de Pago</th>
+            <th>Venta Cobrada</th>
+            <th>Venta Emitida</th>
             <th>Nombre Pasajero</th>
             <th>Teléfono Pasajero</th>
             <th>Mail Pasajero</th>
@@ -106,6 +109,8 @@
           <tr>
             <td>{{ reserva.nombre_ejecutivo }}<br>{{ reserva.correo_ejecutivo }}</td>
             <td>{{ reserva.estado_pago }}</td>
+            <td>{{ reserva.venta_cobrada }}</td>
+            <td>{{ reserva.venta_emitida }}</td>
             <td>{{ reserva.nombre_pasajero }}</td>
             <td>{{ reserva.telefono_pasajero }}</td>
             <td>{{ reserva.mail_pasajero }}</td>
@@ -116,7 +121,7 @@
           </tr>
           {% else %}
           <tr>
-            <td colspan="9" class="text-center">
+            <td colspan="11" class="text-center">
               No hay reservas para los filtros seleccionados.
             </td>
           </tr>
