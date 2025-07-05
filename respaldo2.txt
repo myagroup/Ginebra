@@ -714,10 +714,10 @@ def ranking_ejecutivos():
         )
         reserva.usuario.Ganancia_bruta = reserva.precio_venta_total - total_neto
         ranking_data[key]['num_ventas'] += 1
-        ranking_data[key]['reserva.usuario.Ganancia_bruta'] += reserva.usuario.Ganancia_bruta
+        ranking_data[key]['ganancia_bruta'] += reserva.usuario.Ganancia_bruta
 
     ranking_final = list(ranking_data.values())
-    ranking_final.sort(key=lambda x: x['reserva.usuario.Ganancia_bruta'], reverse=True)
+    ranking_final.sort(key=lambda x: x['ganancia_bruta'], reverse=True)
 
     return render_template('ranking_ejecutivos.html',
                            ranking_data=ranking_final,
@@ -1012,3 +1012,4 @@ def marketing():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
