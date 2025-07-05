@@ -959,6 +959,57 @@ def send_reset_email(user, reset_url):
     mail.send(msg)
 
 
+@app.route('/marketing')
+@login_required
+@rol_required('admin', 'master')
+def marketing():
+    ejecutivo_id = request.args.get('ejecutivo_id', type=int)
+    rango_fechas_str = request.args.get('rango_fechas', 'ultimos_30_dias')
+
+    # Obtener ejecutivos (admin y usuario)
+    ejecutivos = Usuario.query.filter(Usuario.rol.in_(['usuario', 'admin'])).order_by(Usuario.nombre).all()
+    # Generar meses anteriores
+    meses_anteriores = []
+    today = datetime.now()
+    for i in range(12):
+        month = today.month - i
+        year = today.year
+        if month <= 0:
+            month += 12
+            year -= 1
+        meses_anteriores.append(datetime(year, month, 1).strftime('%B %Y'))
+    meses_anteriores.reverse()
+
+    reservas_query = Reserva.query.join(Usuario)
+    if ejecutivo_id:
+        reservas_query = reservas_query.filter(Reserva.usuario_id == ejecutivo_id)
+    start_date, end_date = _get_date_range(rango_fechas_str)
+    reservas_query = reservas_query.filter(Reserva.fecha_venta >= start_date.strftime('%Y-%m-%d'),
+                                           Reserva.fecha_venta <= end_date.strftime('%Y-%m-%d'))
+    reservas = reservas_query.order_by(Reserva.fecha_venta.desc()).all()
+
+    # Solo los campos requeridos para la tabla de marketing
+    reservas_marketing = [
+        {
+            'destino': r.destino,
+            'fecha_venta': r.fecha_venta,
+            'fecha_viaje': r.fecha_viaje,
+            'nombre_pasajero': r.nombre_pasajero,
+            'telefono_pasajero': r.telefono_pasajero,
+            'mail_pasajero': r.mail_pasajero
+        }
+        for r in reservas
+    ]
+
+    return render_template('marketing.html',
+                           reservas=reservas_marketing,
+                           ejecutivo_id=ejecutivo_id,
+                           rango_fechas_str=rango_fechas_str,
+                           ejecutivos=ejecutivos,
+                           meses_anteriores=meses_anteriores,
+                           selected_ejecutivo_id=ejecutivo_id,
+                           selected_rango_fechas=rango_fechas_str)
+
 if __name__ == '__main__':
     app.run(debug=True)
 
