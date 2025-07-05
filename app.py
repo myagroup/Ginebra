@@ -15,6 +15,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import pandas as pd
 from flask_migrate import Migrate
 
+# =====================
+# CONFIGURACIÓN INICIAL
+# =====================
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'clave_secreta_segura')
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -29,7 +32,6 @@ app.config['MAIL_PORT'] = 587  # Puerto SMTP
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = 'your-email@example.com'  # Cambia esto por tu correo electrónico
 app.config['MAIL_PASSWORD'] = 'your-email-password'  # Cambia esto por tu contraseña de correo electrónico
-
 mail = Mail(app)
 
 # Configuración de itsdangerous
@@ -45,8 +47,9 @@ migrate = Migrate(app, db)
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
 
-# ===== MODELOS =====
-
+# =====================
+# MODELOS DE BASE DE DATOS
+# =====================
 class Usuario(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
@@ -102,15 +105,12 @@ class Reserva(db.Model):
 
     usuario = db.relationship('Usuario', backref=db.backref('reservas', lazy=True))
 
-
-# ===== LOGIN MANAGER =====
-
+# =====================
+# LOGIN MANAGER Y DECORADORES
+# =====================
 @login_manager.user_loader
 def load_user(user_id):
     return Usuario.query.get(int(user_id))
-
-
-# ===== DECORADORES =====
 
 def rol_required(*roles):
     def decorator(f):
@@ -123,9 +123,9 @@ def rol_required(*roles):
         return wrapped
     return decorator
 
-
-# ===== FUNCIONES AUXILIARES =====
-
+# =====================
+# FUNCIONES AUXILIARES
+# =====================
 def puede_editar_reserva(reserva):
     return current_user.rol in ('admin', 'master') or reserva.usuario_id == current_user.id
 
@@ -252,9 +252,14 @@ def safe_float(val):
     except Exception:
         return 0.0
 
+def send_reset_email(user, reset_url):
+    msg = Message('Restablecer tu contraseña', sender='noreply@example.com', recipients=[user.correo])
+    msg.body = f'Para restablecer tu contraseña, haz clic en el siguiente enlace: {reset_url}'
+    mail.send(msg)
 
-# ===== RUTAS =====
-
+# =====================
+# RUTAS DE FLASK
+# =====================
 
 @app.route('/')
 def home():
@@ -949,15 +954,6 @@ def reset_password(token):
             flash('Tu contraseña ha sido actualizada.', 'success')
             return redirect(url_for('login'))
     return render_template('reset_password.html')
-
-
-# Función para enviar el correo de restablecimiento
-
-def send_reset_email(user, reset_url):
-    msg = Message('Restablecer tu contraseña', sender='noreply@example.com', recipients=[user.correo])
-    msg.body = f'Para restablecer tu contraseña, haz clic en el siguiente enlace: {reset_url}'
-    mail.send(msg)
-
 
 @app.route('/marketing')
 @login_required
