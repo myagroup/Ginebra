@@ -689,6 +689,7 @@ def reporte_detalle_ventas():
         else:
             end_date = datetime(year, month_num + 1, 1) - timedelta(days=1)
     except Exception:
+        # Estructura vacía con todas las claves esperadas
         return render_template('reporte_detalle_ventas.html',
                                reporte_data=[],
                                totales={
@@ -808,6 +809,14 @@ def reporte_ventas_general_mensual():
     )
 
     ganancia_total_mes = 0.0
+    # Inicializar contadores para los gráficos
+    pagado = 0
+    no_pagado = 0
+    cobrada = 0
+    no_cobrada = 0
+    emitida = 0
+    no_emitida = 0
+
     for reserva in reservas_query.all():
         comision_ejecutivo_porcentaje = 0.0
         if reserva.usuario.comision and reserva.usuario.comision.replace('.', '', 1).isdigit():
@@ -827,10 +836,35 @@ def reporte_ventas_general_mensual():
         ganancia_neta = ganancia_bruta - comision_usuario
         ganancia_total_mes += ganancia_neta
 
+        # Estado de pago
+        if (reserva.estado_pago or '').strip().lower() == 'pagado':
+            pagado += 1
+        else:
+            no_pagado += 1
+        # Venta cobrada
+        if (reserva.venta_cobrada or '').strip().lower() == 'cobrada':
+            cobrada += 1
+        else:
+            no_cobrada += 1
+        # Venta emitida
+        if (reserva.venta_emitida or '').strip().lower() == 'emitida':
+            emitida += 1
+        else:
+            no_emitida += 1
+
+    # Preparar datos como listas para los gráficos
+    datos_estado_pago = [pagado, no_pagado]
+    datos_venta_cobrada = [cobrada, no_cobrada]
+    datos_venta_emitida = [emitida, no_emitida]
+
     return render_template('reporte_ventas_general_mensual.html',
                            ganancia_total_mes=ganancia_total_mes,
                            selected_mes_str=selected_mes_str,
-                           meses_anteriores=meses_anteriores)
+                           meses_anteriores=meses_anteriores,
+                           datos_estado_pago=datos_estado_pago,
+                           datos_venta_cobrada=datos_venta_cobrada,
+                           datos_venta_emitida=datos_venta_emitida
+    )
 
 @app.route('/ranking_ejecutivos')
 @login_required
@@ -858,6 +892,7 @@ def ranking_ejecutivos():
         else:
             end_date = datetime(year, month_num + 1, 1) - timedelta(days=1)
     except Exception:
+        # Siempre pasar una lista vacía
         return render_template('ranking_ejecutivos.html',
                                ranking_data=[],
                                selected_mes_str=selected_mes_str,
@@ -921,6 +956,10 @@ def ranking_ejecutivos():
 
     # Ordenar por ganancia neta
     ranking_final = sorted(ranking_agrupado.values(), key=lambda x: x['total_ganancia_neta'], reverse=True)
+
+    # Si no hay datos, pasar lista vacía
+    if not ranking_final:
+        ranking_final = []
 
     return render_template('ranking_ejecutivos.html',
                            ranking_data=ranking_final,

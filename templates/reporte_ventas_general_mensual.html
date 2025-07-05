@@ -88,8 +88,91 @@
           <h3 class="card-title">${{ "%.2f"|format(ganancia_total_mes) }}</h3>
         </div>
       </div>
+
+      <!-- Gráficos circulares -->
+      <div class="mt-5">
+        <h4 class="text-center mb-4">Resumen de Estados del Mes</h4>
+        <div class="row g-4 justify-content-center">
+          <div class="col-md-4 text-center">
+            <h5 class="mb-3">Pagos Realizados</h5>
+            <canvas id="graficoEstadoPago" style="max-width: 300px; max-height: 300px;"></canvas>
+          </div>
+          <div class="col-md-4 text-center">
+            <h5 class="mb-3">Ventas Cobradas</h5>
+            <canvas id="graficoVentaCobrada" style="max-width: 300px; max-height: 300px;"></canvas>
+          </div>
+          <div class="col-md-4 text-center">
+            <h5 class="mb-3">Ventas Emitidas</h5>
+            <canvas id="graficoVentaEmitida" style="max-width: 300px; max-height: 300px;"></canvas>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      // Definir los arrays como variables JS
+      var datosEstadoPagoArr = {{ datos_estado_pago|tojson }};
+      var datosVentaCobradaArr = {{ datos_venta_cobrada|tojson }};
+      var datosVentaEmitidaArr = {{ datos_venta_emitida|tojson }};
+
+      const datosEstadoPago = {
+        labels: ['Pagado', 'No Pagado'],
+        datasets: [{
+          data: datosEstadoPagoArr,
+          backgroundColor: ['#28a745', '#dc3545'] // Verde, Rojo
+        }]
+      };
+      const datosVentaCobrada = {
+        labels: ['Cobrada', 'No Cobrada'],
+        datasets: [{
+          data: datosVentaCobradaArr,
+          backgroundColor: ['#28a745', '#dc3545'] // Verde, Rojo
+        }]
+      };
+      const datosVentaEmitida = {
+        labels: ['Emitida', 'No Emitida'],
+        datasets: [{
+          data: datosVentaEmitidaArr,
+          backgroundColor: ['#28a745', '#dc3545'] // Verde, Rojo
+        }]
+      };
+      // Renderizar los gráficos
+      new Chart(document.getElementById('graficoEstadoPago'), {
+        type: 'pie',
+        data: datosEstadoPago,
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'bottom', labels: { color: '#fff', font: { size: 14 } } },
+            title: { display: false }
+          }
+        }
+      });
+      new Chart(document.getElementById('graficoVentaCobrada'), {
+        type: 'pie',
+        data: datosVentaCobrada,
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'bottom', labels: { color: '#fff', font: { size: 14 } } },
+            title: { display: false }
+          }
+        }
+      });
+      new Chart(document.getElementById('graficoVentaEmitida'), {
+        type: 'pie',
+        data: datosVentaEmitida,
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'bottom', labels: { color: '#fff', font: { size: 14 } } },
+            title: { display: false }
+          }
+        }
+      });
+    </script>
   </body>
 </html>
