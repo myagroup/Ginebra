@@ -74,7 +74,7 @@ class Reserva(db.Model):
     id_localizador = db.Column(db.String(100), unique=True, nullable=False)
     fecha_viaje = db.Column(db.String(50))
     producto = db.Column(db.String(100))
-    fecha_venta = db.Column(db.String(50))
+    fecha_venta = db.Column(db.Date, nullable=True)  # Cambiado a Date
     modalidad_pago = db.Column(db.String(50))
     nombre_pasajero = db.Column(db.String(100))
     telefono_pasajero = db.Column(db.String(50))
@@ -93,9 +93,9 @@ class Reserva(db.Model):
     correo_ejecutivo = db.Column(db.String(100))
     destino = db.Column(db.String(100))
     comprobante_venta = db.Column(db.String(200))
-    estado_pago = db.Column(db.String(50), default='No Pagado') # Nuevo campo
-    venta_cobrada = db.Column(db.String(50), default='No cobrada') # Nuevo campo
-    venta_emitida = db.Column(db.String(50), default='No emitida') # Nuevo campo
+    estado_pago = db.Column(db.String(50), default='No Pagado')
+    venta_cobrada = db.Column(db.String(50), default='No cobrada')
+    venta_emitida = db.Column(db.String(50), default='No emitida')
 
     usuario = db.relationship('Usuario', backref=db.backref('reservas', lazy=True))
 
@@ -185,7 +185,7 @@ def set_reserva_fields(reserva, form):
         'seguro_neto', 'circuito_neto', 'crucero_neto', 'excursion_neto'
     ]
     campos_str = [
-        'fecha_viaje', 'producto', 'fecha_venta', 'modalidad_pago',
+        'fecha_viaje', 'producto', 'modalidad_pago',
         'nombre_pasajero', 'telefono_pasajero', 'mail_pasajero',
         'localizadores', 'nombre_ejecutivo', 'correo_ejecutivo', 'destino',
         'estado_pago', 'venta_cobrada', 'venta_emitida'  # Agregados los nuevos campos
@@ -200,6 +200,18 @@ def set_reserva_fields(reserva, form):
 
     for campo in campos_str:
         setattr(reserva, campo, form.get(campo, '').strip())
+
+    # Manejo especial para fecha_venta (debe ser date o None)
+    fecha_venta_val = form.get('fecha_venta', '').strip()
+    fecha_venta_date = None
+    if fecha_venta_val:
+        for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y', '%Y/%m/%d'):
+            try:
+                fecha_venta_date = datetime.strptime(fecha_venta_val, fmt).date()
+                break
+            except Exception:
+                continue
+    setattr(reserva, 'fecha_venta', fecha_venta_date)
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -374,7 +386,7 @@ def gestionar_reservas():
     if request.method == 'POST':
         reserva_id = request.form.get('reserva_id')
         id_localizador_form = request.form.get('id_localizador', '').strip()
-        file = request.files.get('comprobante')
+        file = request.files.get('archivo_pdf')
 
         if reserva_id:
             reserva = Reserva.query.get(reserva_id)
