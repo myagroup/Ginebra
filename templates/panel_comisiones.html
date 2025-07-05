@@ -101,7 +101,6 @@
             <th>Crucero Neto</th>
             <th>Excursión Neto</th>
             <th>Paquete Neto</th>
-            <th>Comisión Usuario</th>
             <th>Ganancia Neta</th>
             <th>Comisión a Pagar al Ejecutivo</th>
           </tr>
@@ -110,8 +109,7 @@
           {% for data in datos_comisiones %}
           <tr>
             <td>
-              {{ data.reserva.usuario.nombre }} {{
-              data.reserva.usuario.apellidos }}
+              {{ data.reserva.usuario.nombre }} {{ data.reserva.usuario.apellidos }}
             </td>
             <td>{{ data.reserva.producto }}</td>
             <td>${{ "%.2f"|format(data.reserva.precio_venta_total) }}</td>
@@ -123,13 +121,12 @@
             <td>${{ "%.2f"|format(data.reserva.crucero_neto) }}</td>
             <td>${{ "%.2f"|format(data.reserva.excursion_neto) }}</td>
             <td>${{ "%.2f"|format(data.reserva.paquete_neto) }}</td>
-            <td>${{ "%.2f"|format(data.comision_usuario) }}</td>
-            <td>${{ "%.2f"|format(data.ganancia_neta) }}</td>
-            <td>${{ "%.2f"|format(data.comision_usuario) }}</td>
+            <td>${{ "%.2f"|format(data.ganancia_bruta) }}</td>
+            <td>${{ "%.2f"|format(data.comision_pago_ejecutivo) }}</td>
           </tr>
           {% else %}
           <tr>
-            <td colspan="14" class="text-center">
+            <td colspan="13" class="text-center">
               No hay datos de comisiones para los filtros seleccionados.
             </td>
           </tr>

@@ -84,15 +84,15 @@
           <tr>
             <th>Ejecutivo</th>
             <th>Cantidad de Ventas</th>
-            <th>Ganancia Neta Generada</th>
+            <th>Ganancia Bruta Generada</th>
           </tr>
         </thead>
         <tbody>
           {% for data in ranking_data %}
           <tr>
-            <td>{{ data.ejecutivo.nombre }} {{ data.ejecutivo.apellidos }}</td>
+            <td>{{ data.ejecutivo }}</td>
             <td>{{ data.num_ventas }}</td>
-            <td>${{ "%.2f"|format(data.ganancia_neta) }}</td>
+            <td>${{ "%.2f"|format(data.ganancia_bruta) }}</td>
           </tr>
           {% else %}
           <tr>

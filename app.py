@@ -620,13 +620,13 @@ def panel_comisiones():
             reserva.paquete_neto
         )
         ganancia_bruta = reserva.precio_venta_total - total_neto
-        comision_usuario = ganancia_bruta * comision_ejecutivo_porcentaje
-        ganancia_neta = ganancia_bruta - comision_usuario
+        comision_pago_ejecutivo = ganancia_bruta * comision_ejecutivo_porcentaje
+        ganancia_neta = ganancia_bruta - comision_pago_ejecutivo
         datos_comisiones.append({
             'reserva': reserva,
             'total_neto': total_neto,
             'ganancia_bruta': ganancia_bruta,
-            'comision_usuario': comision_usuario,
+            'comision_pago_ejecutivo': comision_pago_ejecutivo,
             'ganancia_neta': ganancia_neta
         })
 
@@ -813,7 +813,10 @@ def reporte_ventas_general_mensual():
         return render_template('reporte_ventas_general_mensual.html',
                                ganancia_total_mes=0.0,
                                selected_mes_str=selected_mes_str,
-                               meses_anteriores=meses_anteriores)
+                               meses_anteriores=meses_anteriores,
+                               datos_estado_pago=[0, 0],
+                               datos_venta_cobrada=[0, 0],
+                               datos_venta_emitida=[0, 0])
 
     reservas_query = Reserva.query.join(Usuario).filter(
         Reserva.fecha_venta >= start_date.strftime('%Y-%m-%d'),
@@ -915,8 +918,15 @@ def ranking_ejecutivos():
         Reserva.fecha_venta <= end_date.strftime('%Y-%m-%d')
     )
 
-    ranking_data = []
+    ranking_data = {}
     for reserva in reservas_query.all():
+        key = reserva.usuario_id
+        if key not in ranking_data:
+            ranking_data[key] = {
+                'ejecutivo': f"{reserva.usuario.nombre} {reserva.usuario.apellidos}",
+                'num_ventas': 0,
+                'ganancia_bruta': 0.0
+            }
         comision_ejecutivo_porcentaje = 0.0
         if reserva.usuario.comision and reserva.usuario.comision.replace('.', '', 1).isdigit():
             comision_ejecutivo_porcentaje = float(reserva.usuario.comision) / 100.0
@@ -931,47 +941,11 @@ def ranking_ejecutivos():
             reserva.paquete_neto
         )
         ganancia_bruta = reserva.precio_venta_total - total_neto
-        comision_usuario = ganancia_bruta * comision_ejecutivo_porcentaje
-        ganancia_neta = ganancia_bruta - comision_usuario
+        ranking_data[key]['num_ventas'] += 1
+        ranking_data[key]['ganancia_bruta'] += ganancia_bruta
 
-        ranking_data.append({
-            'usuario_id': reserva.usuario_id,
-            'username': reserva.usuario.username,
-            'nombre': reserva.usuario.nombre,
-            'apellidos': reserva.usuario.apellidos,
-            'correo': reserva.usuario.correo,
-            'comision': reserva.usuario.comision,
-            'total_ventas': 1,
-            'total_ganancia_neta': ganancia_neta,
-            'total_comision_usuario': comision_usuario
-        })
-
-    # Agrupar por usuario y calcular totales
-    ranking_agrupado = {}
-    for r in ranking_data:
-        usuario_id = r['usuario_id']
-        if usuario_id not in ranking_agrupado:
-            ranking_agrupado[usuario_id] = {
-                'usuario_id': usuario_id,
-                'username': r['username'],
-                'nombre': r['nombre'],
-                'apellidos': r['apellidos'],
-                'correo': r['correo'],
-                'comision': r['comision'],
-                'total_ventas': 0,
-                'total_ganancia_neta': 0.0,
-                'total_comision_usuario': 0.0
-            }
-        ranking_agrupado[usuario_id]['total_ventas'] += 1
-        ranking_agrupado[usuario_id]['total_ganancia_neta'] += r['total_ganancia_neta']
-        ranking_agrupado[usuario_id]['total_comision_usuario'] += r['total_comision_usuario']
-
-    # Ordenar por ganancia neta
-    ranking_final = sorted(ranking_agrupado.values(), key=lambda x: x['total_ganancia_neta'], reverse=True)
-
-    # Si no hay datos, pasar lista vacía
-    if not ranking_final:
-        ranking_final = []
+    ranking_final = list(ranking_data.values())
+    ranking_final.sort(key=lambda x: x['ganancia_bruta'], reverse=True)
 
     return render_template('ranking_ejecutivos.html',
                            ranking_data=ranking_final,
