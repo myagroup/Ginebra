@@ -109,7 +109,8 @@
           {% for data in datos_comisiones %}
           <tr>
             <td>
-              {{ data.reserva.usuario.nombre }} {{ data.reserva.usuario.apellidos }}
+              {{ data.reserva.nombre_ejecutivo }}<br>
+              {{ data.reserva.correo_ejecutivo }}
             </td>
             <td>{{ data.reserva.producto }}</td>
             <td>${{ "%.2f"|format(data.reserva.precio_venta_total) }}</td>

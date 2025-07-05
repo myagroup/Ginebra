@@ -568,10 +568,6 @@ def control_gestion_clientes():
                                            Reserva.fecha_venta <= end_date.strftime('%Y-%m-%d'))
     reservas = reservas_query.order_by(Reserva.fecha_venta.desc()).all()
 
-    # Añadir nombre completo del ejecutivo a cada reserva
-    for reserva in reservas:
-        reserva.ejecutivo = f"{reserva.usuario.nombre} {reserva.usuario.apellidos}".strip()
-
     return render_template('control_gestion_clientes.html',
                            reservas=reservas,
                            ejecutivo_id=ejecutivo_id,
@@ -610,7 +606,8 @@ def panel_comisiones():
 
     datos_comisiones = []
     for reserva in reservas:
-        ejecutivo = f"{reserva.usuario.nombre} {reserva.usuario.apellidos}".strip()
+        # Revertido: Usar nombre_ejecutivo y correo_ejecutivo de la reserva
+        ejecutivo = reserva.nombre_ejecutivo or ''
         comision_ejecutivo_porcentaje = 0.0
         if reserva.usuario.comision and reserva.usuario.comision.replace('.', '', 1).isdigit():
             comision_ejecutivo_porcentaje = float(reserva.usuario.comision) / 100.0
@@ -684,11 +681,11 @@ def ranking_ejecutivos():
 
     ranking_data = {}
     for reserva in reservas_query.all():
-        key = reserva.usuario_id
-        ejecutivo = f"{reserva.usuario.nombre} {reserva.usuario.apellidos}".strip()
+        # Revertido: Agrupar por nombre_ejecutivo
+        key = reserva.nombre_ejecutivo or ''
         if key not in ranking_data:
             ranking_data[key] = {
-                'ejecutivo': ejecutivo,
+                'ejecutivo': key,
                 'num_ventas': 0,
                 'ganancia_bruta': 0.0
             }
@@ -716,47 +713,6 @@ def ranking_ejecutivos():
                            ranking_data=ranking_final,
                            selected_mes_str=selected_mes_str,
                            meses_anteriores=meses_anteriores)
-
-@app.route('/reset_password', methods=['GET', 'POST'])
-def reset_password_request():
-    if request.method == 'POST':
-        email = request.form['email']
-        user = Usuario.query.filter_by(correo=email).first()
-        if user:
-            token = serializer.dumps(email, salt='password-reset-salt')
-            reset_url = url_for('reset_password', token=token, _external=True)
-            send_reset_email(user, reset_url)
-            flash('Se ha enviado un correo electrónico con instrucciones para restablecer tu contraseña.', 'info')
-        else:
-            flash('No se encontró una cuenta con ese correo electrónico.', 'danger')
-    return render_template('reset_password_request.html')
-
-@app.route('/reset_password/<token>', methods=['GET', 'POST'])
-def reset_password(token):
-    try:
-        email = serializer.loads(token, salt='password-reset-salt', max_age=3600)
-    except:
-        flash('El enlace de restablecimiento de contraseña es inválido o ha expirado.', 'danger')
-        return redirect(url_for('reset_password_request'))
-
-    if request.method == 'POST':
-        password = request.form['password']
-        user = Usuario.query.filter_by(correo=email).first()
-        if user:
-            user.password = password
-            db.session.commit()
-            flash('Tu contraseña ha sido actualizada.', 'success')
-            return redirect(url_for('login'))
-    return render_template('reset_password.html')
-
-
-# Función para enviar el correo de restablecimiento
-
-def send_reset_email(user, reset_url):
-    msg = Message('Restablecer tu contraseña', sender='noreply@example.com', recipients=[user.correo])
-    msg.body = f'Para restablecer tu contraseña, haz clic en el siguiente enlace: {reset_url}'
-    mail.send(msg)
-
 
 @app.route('/reporte_detalle_ventas')
 @login_required
@@ -802,12 +758,11 @@ def reporte_detalle_ventas():
         Reserva.fecha_venta <= end_date.strftime('%Y-%m-%d')
     )
 
-    # Agrupar por ejecutivo (usuario_id)
+    # Agrupar por nombre_ejecutivo
     reporte_data_dict = {}
     for reserva in reservas_query.all():
-        ejecutivo_id = reserva.usuario_id
-        nombre_ejecutivo = f"{reserva.usuario.nombre} {reserva.usuario.apellidos}".strip()
-        correo_ejecutivo = reserva.usuario.correo
+        ejecutivo_id = reserva.nombre_ejecutivo or ''
+        correo_ejecutivo = reserva.correo_ejecutivo or ''
         rol_ejecutivo = reserva.usuario.rol
         comision_ejecutivo_porcentaje = 0.0
         if reserva.usuario.comision and reserva.usuario.comision.replace('.', '', 1).isdigit():
@@ -828,7 +783,7 @@ def reporte_detalle_ventas():
 
         if ejecutivo_id not in reporte_data_dict:
             reporte_data_dict[ejecutivo_id] = {
-                'nombre_ejecutivo': nombre_ejecutivo,
+                'nombre_ejecutivo': ejecutivo_id,
                 'correo_ejecutivo': correo_ejecutivo,
                 'rol_ejecutivo': rol_ejecutivo,
                 'total_ventas': 0.0,

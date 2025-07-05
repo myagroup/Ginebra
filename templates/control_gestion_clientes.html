@@ -90,6 +90,7 @@
       <table class="table table-bordered table-hover text-white align-middle">
         <thead class="table-dark">
           <tr>
+            <th>Ejecutivo</th>
             <th>Estado de Pago</th>
             <th>Nombre Pasajero</th>
             <th>Teléfono Pasajero</th>
@@ -103,6 +104,7 @@
         <tbody>
           {% for reserva in reservas %}
           <tr>
+            <td>{{ reserva.nombre_ejecutivo }}<br>{{ reserva.correo_ejecutivo }}</td>
             <td>{{ reserva.estado_pago }}</td>
             <td>{{ reserva.nombre_pasajero }}</td>
             <td>{{ reserva.telefono_pasajero }}</td>
@@ -114,7 +116,7 @@
           </tr>
           {% else %}
           <tr>
-            <td colspan="8" class="text-center">
+            <td colspan="9" class="text-center">
               No hay reservas para los filtros seleccionados.
             </td>
           </tr>
