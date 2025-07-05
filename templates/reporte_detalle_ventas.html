@@ -97,7 +97,11 @@
         <tbody>
           {% for data in reporte_data %}
           <tr>
-            <td>{{ data.ejecutivo.nombre }} {{ data.ejecutivo.apellidos }}</td>
+            <td>
+              {{ data.nombre_ejecutivo }}<br>
+              <span class="badge bg-secondary">{{ data.rol_ejecutivo|default('user') }}</span><br>
+              {{ data.correo_ejecutivo }}
+            </td>
             <td>${{ "%.2f"|format(data.total_ventas) }}</td>
             <td>${{ "%.2f"|format(data.total_costos) }}</td>
             <td>${{ "%.2f"|format(data.total_comisiones) }}</td>

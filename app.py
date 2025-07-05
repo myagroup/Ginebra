@@ -568,6 +568,10 @@ def control_gestion_clientes():
                                            Reserva.fecha_venta <= end_date.strftime('%Y-%m-%d'))
     reservas = reservas_query.order_by(Reserva.fecha_venta.desc()).all()
 
+    # Añadir nombre completo del ejecutivo a cada reserva
+    for reserva in reservas:
+        reserva.ejecutivo = f"{reserva.usuario.nombre} {reserva.usuario.apellidos}".strip()
+
     return render_template('control_gestion_clientes.html',
                            reservas=reservas,
                            ejecutivo_id=ejecutivo_id,
@@ -606,6 +610,7 @@ def panel_comisiones():
 
     datos_comisiones = []
     for reserva in reservas:
+        ejecutivo = f"{reserva.usuario.nombre} {reserva.usuario.apellidos}".strip()
         comision_ejecutivo_porcentaje = 0.0
         if reserva.usuario.comision and reserva.usuario.comision.replace('.', '', 1).isdigit():
             comision_ejecutivo_porcentaje = float(reserva.usuario.comision) / 100.0
@@ -624,6 +629,7 @@ def panel_comisiones():
         ganancia_neta = ganancia_bruta - comision_pago_ejecutivo
         datos_comisiones.append({
             'reserva': reserva,
+            'ejecutivo': ejecutivo,
             'total_neto': total_neto,
             'ganancia_bruta': ganancia_bruta,
             'comision_pago_ejecutivo': comision_pago_ejecutivo,
@@ -638,248 +644,6 @@ def panel_comisiones():
                            meses_anteriores=meses_anteriores,
                            selected_ejecutivo_id=ejecutivo_id,
                            selected_rango_fechas=rango_fechas_str)
-
-@app.route('/marketing')
-@login_required
-@rol_required('admin', 'master')
-def marketing():
-    ejecutivo_id = request.args.get('ejecutivo_id', type=int)
-    rango_fechas_str = request.args.get('rango_fechas', 'ultimos_30_dias')
-
-    ejecutivos = Usuario.query.filter(Usuario.rol.in_(['usuario', 'admin'])).order_by(Usuario.nombre).all()
-    meses_anteriores = []
-    today = datetime.now()
-    for i in range(12):
-        month = today.month - i
-        year = today.year
-        if month <= 0:
-            month += 12
-            year -= 1
-        meses_anteriores.append(datetime(year, month, 1).strftime('%B %Y'))
-    meses_anteriores.reverse()
-
-    reservas_query = Reserva.query.join(Usuario)
-    if ejecutivo_id:
-        reservas_query = reservas_query.filter(Reserva.usuario_id == ejecutivo_id)
-    start_date, end_date = _get_date_range(rango_fechas_str)
-    reservas_query = reservas_query.filter(Reserva.fecha_venta >= start_date.strftime('%Y-%m-%d'),
-                                           Reserva.fecha_venta <= end_date.strftime('%Y-%m-%d'))
-    reservas = reservas_query.order_by(Reserva.fecha_venta.desc()).all()
-
-    return render_template('marketing.html',
-                           reservas=reservas,
-                           ejecutivo_id=ejecutivo_id,
-                           rango_fechas_str=rango_fechas_str,
-                           ejecutivos=ejecutivos,
-                           meses_anteriores=meses_anteriores,
-                           selected_ejecutivo_id=ejecutivo_id,
-                           selected_rango_fechas=rango_fechas_str)
-
-@app.route('/reporte_detalle_ventas')
-@login_required
-@rol_required('admin', 'master')
-def reporte_detalle_ventas():
-    meses_anteriores = []
-    today = datetime.now()
-    for i in range(12):
-        month = today.month - i
-        year = today.year
-        if month <= 0:
-            month += 12
-            year -= 1
-        meses_anteriores.append(datetime(year, month, 1).strftime('%B %Y'))
-    meses_anteriores.reverse()
-
-    selected_mes_str = request.args.get('mes', '')
-    try:
-        month_name, year_str = selected_mes_str.split(' ')
-        month_num = datetime.strptime(month_name, '%B').month
-        year = int(year_str)
-        start_date = datetime(year, month_num, 1)
-        if month_num == 12:
-            end_date = datetime(year + 1, 1, 1) - timedelta(days=1)
-        else:
-            end_date = datetime(year, month_num + 1, 1) - timedelta(days=1)
-    except Exception:
-        # Estructura vacía con todas las claves esperadas
-        return render_template('reporte_detalle_ventas.html',
-                               reporte_data=[],
-                               totales={
-                                   'total_ventas_global': 0.0,
-                                   'total_costos_global': 0.0,
-                                   'total_comisiones_global': 0.0,
-                                   'total_ganancia_neta_global': 0.0,
-                                   'total_ventas_realizadas_global': 0
-                               },
-                               selected_mes_str=selected_mes_str,
-                               meses_anteriores=meses_anteriores)
-
-    reservas_query = Reserva.query.join(Usuario).filter(
-        Reserva.fecha_venta >= start_date.strftime('%Y-%m-%d'),
-        Reserva.fecha_venta <= end_date.strftime('%Y-%m-%d')
-    )
-
-    reporte_data = []
-    for reserva in reservas_query.all():
-        comision_ejecutivo_porcentaje = 0.0
-        if reserva.usuario.comision and reserva.usuario.comision.replace('.', '', 1).isdigit():
-            comision_ejecutivo_porcentaje = float(reserva.usuario.comision) / 100.0
-        total_neto = (
-            reserva.hotel_neto +
-            reserva.vuelo_neto +
-            reserva.traslado_neto +
-            reserva.seguro_neto +
-            reserva.circuito_neto +
-            reserva.crucero_neto +
-            reserva.excursion_neto +
-            reserva.paquete_neto
-        )
-        ganancia_bruta = reserva.precio_venta_total - total_neto
-        comision_usuario = ganancia_bruta * comision_ejecutivo_porcentaje
-        ganancia_neta = ganancia_bruta - comision_usuario
-
-        reporte_data.append({
-            'reserva_id': reserva.id,
-            'id_localizador': reserva.id_localizador,
-            'usuario': reserva.usuario.username,
-            'fecha_viaje': reserva.fecha_viaje,
-            'producto': reserva.producto,
-            'fecha_venta': reserva.fecha_venta,
-            'modalidad_pago': reserva.modalidad_pago,
-            'nombre_pasajero': reserva.nombre_pasajero,
-            'telefono_pasajero': reserva.telefono_pasajero,
-            'mail_pasajero': reserva.mail_pasajero,
-            'precio_venta_total': reserva.precio_venta_total,
-            'hotel_neto': reserva.hotel_neto,
-            'vuelo_neto': reserva.vuelo_neto,
-            'traslado_neto': reserva.traslado_neto,
-            'seguro_neto': reserva.seguro_neto,
-            'circuito_neto': reserva.circuito_neto,
-            'crucero_neto': reserva.crucero_neto,
-            'excursion_neto': reserva.excursion_neto,
-            'paquete_neto': reserva.paquete_neto,
-            'localizadores': reserva.localizadores,
-            'nombre_ejecutivo': reserva.nombre_ejecutivo,
-            'correo_ejecutivo': reserva.correo_ejecutivo,
-            'destino': reserva.destino,
-            'estado_pago': reserva.estado_pago,
-            'venta_cobrada': reserva.venta_cobrada,
-            'venta_emitida': reserva.venta_emitida,
-            'comision_usuario': comision_usuario,
-            'ganancia_neta': ganancia_neta
-        })
-
-    # Calcular totales
-    totales = {
-        'total_ventas_global': sum(r['precio_venta_total'] for r in reporte_data),
-        'total_costos_global': sum(r['hotel_neto'] + r['vuelo_neto'] + r['traslado_neto'] + r['seguro_neto'] + r['circuito_neto'] + r['crucero_neto'] + r['excursion_neto'] + r['paquete_neto'] for r in reporte_data),
-        'total_comisiones_global': sum(r['comision_usuario'] for r in reporte_data),
-        'total_ganancia_neta_global': sum(r['ganancia_neta'] for r in reporte_data),
-        'total_ventas_realizadas_global': len(reporte_data)
-    }
-
-    return render_template('reporte_detalle_ventas.html',
-                           reporte_data=reporte_data,
-                           totales=totales,
-                           selected_mes_str=selected_mes_str,
-                           meses_anteriores=meses_anteriores)
-
-@app.route('/reporte_ventas_general_mensual')
-@login_required
-@rol_required('admin', 'master')
-def reporte_ventas_general_mensual():
-    meses_anteriores = []
-    today = datetime.now()
-    for i in range(12):
-        month = today.month - i
-        year = today.year
-        if month <= 0:
-            month += 12
-            year -= 1
-        meses_anteriores.append(datetime(year, month, 1).strftime('%B %Y'))
-    meses_anteriores.reverse()
-
-    selected_mes_str = request.args.get('mes', '')
-    try:
-        month_name, year_str = selected_mes_str.split(' ')
-        month_num = datetime.strptime(month_name, '%B').month
-        year = int(year_str)
-        start_date = datetime(year, month_num, 1)
-        if month_num == 12:
-            end_date = datetime(year + 1, 1, 1) - timedelta(days=1)
-        else:
-            end_date = datetime(year, month_num + 1, 1) - timedelta(days=1)
-    except Exception:
-        return render_template('reporte_ventas_general_mensual.html',
-                               ganancia_total_mes=0.0,
-                               selected_mes_str=selected_mes_str,
-                               meses_anteriores=meses_anteriores,
-                               datos_estado_pago=[0, 0],
-                               datos_venta_cobrada=[0, 0],
-                               datos_venta_emitida=[0, 0])
-
-    reservas_query = Reserva.query.join(Usuario).filter(
-        Reserva.fecha_venta >= start_date.strftime('%Y-%m-%d'),
-        Reserva.fecha_venta <= end_date.strftime('%Y-%m-%d')
-    )
-
-    ganancia_total_mes = 0.0
-    # Inicializar contadores para los gráficos
-    pagado = 0
-    no_pagado = 0
-    cobrada = 0
-    no_cobrada = 0
-    emitida = 0
-    no_emitida = 0
-
-    for reserva in reservas_query.all():
-        comision_ejecutivo_porcentaje = 0.0
-        if reserva.usuario.comision and reserva.usuario.comision.replace('.', '', 1).isdigit():
-            comision_ejecutivo_porcentaje = float(reserva.usuario.comision) / 100.0
-        total_neto = (
-            reserva.hotel_neto +
-            reserva.vuelo_neto +
-            reserva.traslado_neto +
-            reserva.seguro_neto +
-            reserva.circuito_neto +
-            reserva.crucero_neto +
-            reserva.excursion_neto +
-            reserva.paquete_neto
-        )
-        ganancia_bruta = reserva.precio_venta_total - total_neto
-        comision_usuario = ganancia_bruta * comision_ejecutivo_porcentaje
-        ganancia_neta = ganancia_bruta - comision_usuario
-        ganancia_total_mes += ganancia_neta
-
-        # Estado de pago
-        if (reserva.estado_pago or '').strip().lower() == 'pagado':
-            pagado += 1
-        else:
-            no_pagado += 1
-        # Venta cobrada
-        if (reserva.venta_cobrada or '').strip().lower() == 'cobrada':
-            cobrada += 1
-        else:
-            no_cobrada += 1
-        # Venta emitida
-        if (reserva.venta_emitida or '').strip().lower() == 'emitida':
-            emitida += 1
-        else:
-            no_emitida += 1
-
-    # Preparar datos como listas para los gráficos
-    datos_estado_pago = [pagado, no_pagado]
-    datos_venta_cobrada = [cobrada, no_cobrada]
-    datos_venta_emitida = [emitida, no_emitida]
-
-    return render_template('reporte_ventas_general_mensual.html',
-                           ganancia_total_mes=ganancia_total_mes,
-                           selected_mes_str=selected_mes_str,
-                           meses_anteriores=meses_anteriores,
-                           datos_estado_pago=datos_estado_pago,
-                           datos_venta_cobrada=datos_venta_cobrada,
-                           datos_venta_emitida=datos_venta_emitida
-    )
 
 @app.route('/ranking_ejecutivos')
 @login_required
@@ -921,9 +685,10 @@ def ranking_ejecutivos():
     ranking_data = {}
     for reserva in reservas_query.all():
         key = reserva.usuario_id
+        ejecutivo = f"{reserva.usuario.nombre} {reserva.usuario.apellidos}".strip()
         if key not in ranking_data:
             ranking_data[key] = {
-                'ejecutivo': f"{reserva.usuario.nombre} {reserva.usuario.apellidos}",
+                'ejecutivo': ejecutivo,
                 'num_ventas': 0,
                 'ganancia_bruta': 0.0
             }
@@ -993,5 +758,104 @@ def send_reset_email(user, reset_url):
     mail.send(msg)
 
 
-if __name__ == '__main__':
-    app.run(debug=True)
+@app.route('/reporte_detalle_ventas')
+@login_required
+@rol_required('admin', 'master')
+def reporte_detalle_ventas():
+    meses_anteriores = []
+    today = datetime.now()
+    for i in range(12):
+        month = today.month - i
+        year = today.year
+        if month <= 0:
+            month += 12
+            year -= 1
+        meses_anteriores.append(datetime(year, month, 1).strftime('%B %Y'))
+    meses_anteriores.reverse()
+
+    selected_mes_str = request.args.get('mes', '')
+    try:
+        month_name, year_str = selected_mes_str.split(' ')
+        month_num = datetime.strptime(month_name, '%B').month
+        year = int(year_str)
+        start_date = datetime(year, month_num, 1)
+        if month_num == 12:
+            end_date = datetime(year + 1, 1, 1) - timedelta(days=1)
+        else:
+            end_date = datetime(year, month_num + 1, 1) - timedelta(days=1)
+    except Exception:
+        # Estructura vacía con todas las claves esperadas
+        return render_template('reporte_detalle_ventas.html',
+                               reporte_data=[],
+                               totales={
+                                   'total_ventas_global': 0.0,
+                                   'total_costos_global': 0.0,
+                                   'total_comisiones_global': 0.0,
+                                   'total_ganancia_neta_global': 0.0,
+                                   'total_ventas_realizadas_global': 0
+                               },
+                               selected_mes_str=selected_mes_str,
+                               meses_anteriores=meses_anteriores)
+
+    reservas_query = Reserva.query.join(Usuario).filter(
+        Reserva.fecha_venta >= start_date.strftime('%Y-%m-%d'),
+        Reserva.fecha_venta <= end_date.strftime('%Y-%m-%d')
+    )
+
+    # Agrupar por ejecutivo (usuario_id)
+    reporte_data_dict = {}
+    for reserva in reservas_query.all():
+        ejecutivo_id = reserva.usuario_id
+        nombre_ejecutivo = f"{reserva.usuario.nombre} {reserva.usuario.apellidos}".strip()
+        correo_ejecutivo = reserva.usuario.correo
+        rol_ejecutivo = reserva.usuario.rol
+        comision_ejecutivo_porcentaje = 0.0
+        if reserva.usuario.comision and reserva.usuario.comision.replace('.', '', 1).isdigit():
+            comision_ejecutivo_porcentaje = float(reserva.usuario.comision) / 100.0
+        total_neto = (
+            reserva.hotel_neto +
+            reserva.vuelo_neto +
+            reserva.traslado_neto +
+            reserva.seguro_neto +
+            reserva.circuito_neto +
+            reserva.crucero_neto +
+            reserva.excursion_neto +
+            reserva.paquete_neto
+        )
+        ganancia_bruta = reserva.precio_venta_total - total_neto
+        comision_usuario = ganancia_bruta * comision_ejecutivo_porcentaje
+        ganancia_neta = ganancia_bruta - comision_usuario
+
+        if ejecutivo_id not in reporte_data_dict:
+            reporte_data_dict[ejecutivo_id] = {
+                'nombre_ejecutivo': nombre_ejecutivo,
+                'correo_ejecutivo': correo_ejecutivo,
+                'rol_ejecutivo': rol_ejecutivo,
+                'total_ventas': 0.0,
+                'total_costos': 0.0,
+                'total_comisiones': 0.0,
+                'ganancia_neta': 0.0,
+                'num_ventas': 0
+            }
+        reporte_data_dict[ejecutivo_id]['total_ventas'] += reserva.precio_venta_total
+        reporte_data_dict[ejecutivo_id]['total_costos'] += total_neto
+        reporte_data_dict[ejecutivo_id]['total_comisiones'] += comision_usuario
+        reporte_data_dict[ejecutivo_id]['ganancia_neta'] += ganancia_neta
+        reporte_data_dict[ejecutivo_id]['num_ventas'] += 1
+
+    reporte_data = list(reporte_data_dict.values())
+
+    # Calcular totales
+    totales = {
+        'total_ventas_global': sum(r['total_ventas'] for r in reporte_data),
+        'total_costos_global': sum(r['total_costos'] for r in reporte_data),
+        'total_comisiones_global': sum(r['total_comisiones'] for r in reporte_data),
+        'total_ganancia_neta_global': sum(r['ganancia_neta'] for r in reporte_data),
+        'total_ventas_realizadas_global': sum(r['num_ventas'] for r in reporte_data)
+    }
+
+    return render_template('reporte_detalle_ventas.html',
+                           reporte_data=reporte_data,
+                           totales=totales,
+                           selected_mes_str=selected_mes_str,
+                           meses_anteriores=meses_anteriores)
