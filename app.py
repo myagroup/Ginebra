@@ -94,6 +94,8 @@ class Reserva(db.Model):
     destino = db.Column(db.String(100))
     comprobante_venta = db.Column(db.String(200))
     estado_pago = db.Column(db.String(50), default='No Pagado') # Nuevo campo
+    venta_cobrada = db.Column(db.String(50), default='No cobrada') # Nuevo campo
+    venta_emitida = db.Column(db.String(50), default='No emitida') # Nuevo campo
 
     usuario = db.relationship('Usuario', backref=db.backref('reservas', lazy=True))
 
@@ -185,7 +187,8 @@ def set_reserva_fields(reserva, form):
     campos_str = [
         'fecha_viaje', 'producto', 'fecha_venta', 'modalidad_pago',
         'nombre_pasajero', 'telefono_pasajero', 'mail_pasajero',
-        'localizadores', 'nombre_ejecutivo', 'correo_ejecutivo', 'destino'
+        'localizadores', 'nombre_ejecutivo', 'correo_ejecutivo', 'destino',
+        'estado_pago', 'venta_cobrada', 'venta_emitida'  # Agregados los nuevos campos
     ]
 
     for campo in campos_float:
@@ -499,7 +502,10 @@ def exportar_reservas():
         'Localizadores': r.localizadores,
         'Nombre ejecutivo': r.nombre_ejecutivo,
         'Correo ejecutivo': r.correo_ejecutivo,
-        'Destino': r.destino
+        'Destino': r.destino,
+        'Estado de pago': r.estado_pago,           # Nuevo campo en exportación
+        'Venta cobrada': r.venta_cobrada,          # Nuevo campo en exportación
+        'Venta emitida': r.venta_emitida           # Nuevo campo en exportación
     } for r in reservas]
 
     df = pd.DataFrame(data)
@@ -639,8 +645,17 @@ def reporte_detalle_ventas():
         else:
             end_date = datetime(year, month_num + 1, 1) - timedelta(days=1)
     except Exception:
-        flash('Mes no válido para el reporte.', 'danger')
-        return redirect(url_for('reportes_gerencia'))
+        # Si no hay mes válido, mostrar la página con datos vacíos y el filtro
+        return render_template('reporte_detalle_ventas.html',
+                               reporte_data=[],
+                               totales={
+                                   'total_ventas_global': 0.0,
+                                   'total_costos_global': 0.0,
+                                   'total_comisiones_global': 0.0,
+                                   'total_ganancia_neta_global': 0.0,
+                                   'total_ventas_realizadas_global': 0
+                               },
+                               selected_mes_str=selected_mes_str)
 
     # Query all users (executives) to iterate through them
     ejecutivos = Usuario.query.filter(Usuario.rol.in_(['usuario', 'admin'])).order_by(Usuario.nombre).all()
@@ -725,7 +740,6 @@ def reporte_detalle_ventas():
 @rol_required('admin', 'master')
 def reporte_ventas_general_mensual():
     selected_mes_str = request.args.get('mes', '')
-
     try:
         month_name, year_str = selected_mes_str.split(' ')
         month_num = datetime.strptime(month_name, '%B').month
@@ -736,8 +750,9 @@ def reporte_ventas_general_mensual():
         else:
             end_date = datetime(year, month_num + 1, 1) - timedelta(days=1)
     except Exception:
-        flash('Mes no válido para el reporte.', 'danger')
-        return redirect(url_for('reportes_gerencia'))
+        return render_template('reporte_ventas_general_mensual.html',
+                               ganancia_total_mes=0.0,
+                               selected_mes_str=selected_mes_str)
 
     reservas_mes = Reserva.query.filter(
         Reserva.fecha_venta >= start_date.strftime('%Y-%m-%d'),
@@ -767,7 +782,6 @@ def reporte_ventas_general_mensual():
 @rol_required('admin', 'master')
 def ranking_ejecutivos():
     selected_mes_str = request.args.get('mes', '')
-
     try:
         month_name, year_str = selected_mes_str.split(' ')
         month_num = datetime.strptime(month_name, '%B').month
@@ -778,8 +792,9 @@ def ranking_ejecutivos():
         else:
             end_date = datetime(year, month_num + 1, 1) - timedelta(days=1)
     except Exception:
-        flash('Mes no válido para el reporte.', 'danger')
-        return redirect(url_for('reportes_gerencia'))
+        return render_template('ranking_ejecutivos.html',
+                               ranking_data=[],
+                               selected_mes_str=selected_mes_str)
 
     ejecutivos = Usuario.query.filter(Usuario.rol.in_(['usuario', 'admin'])).order_by(Usuario.nombre).all()
 
@@ -826,56 +841,6 @@ def ranking_ejecutivos():
                            ranking_data=ranking_data,
                            selected_mes_str=selected_mes_str)
 
-
-@app.route('/gestion_ejecutivo_cliente')
-@login_required
-@rol_required('admin', 'master')
-def gestion_ejecutivo_cliente():
-    # Obtener todos los usuarios que pueden ser ejecutivos (excluyendo master si es necesario)
-    ejecutivos = Usuario.query.filter(Usuario.rol.in_(['usuario', 'admin'])).order_by(Usuario.nombre).all()
-
-    # Obtener los filtros seleccionados de la URL
-    selected_ejecutivo_id = request.args.get('ejecutivo_id', type=int)
-    selected_rango_fechas = request.args.get('rango_fechas', 'ultimos_30_dias')
-
-    # Lógica para generar los meses anteriores
-    meses_anteriores = []
-    today = datetime.now()
-    for i in range(12): # Generar los últimos 12 meses
-        month = today.month - i
-        year = today.year
-        if month <= 0:
-            month += 12
-            year -= 1
-        meses_anteriores.append(datetime(year, month, 1).strftime('%B %Y'))
-    meses_anteriores.reverse() # Para que aparezcan en orden cronológico
-
-    return render_template('gestion_ejecutivo_cliente.html',
-                           ejecutivos=ejecutivos,
-                           selected_ejecutivo_id=selected_ejecutivo_id,
-                           meses_anteriores=meses_anteriores,
-                           selected_rango_fechas=selected_rango_fechas)
-
-@app.route('/reportes_gerencia')
-@login_required
-@rol_required('admin', 'master')
-def reportes_gerencia():
-    meses_anteriores = []
-    today = datetime.now()
-    for i in range(12): # Generar los últimos 12 meses
-        month = today.month - i
-        year = today.year
-        if month <= 0:
-            month += 12
-            year -= 1
-        meses_anteriores.append(datetime(year, month, 1).strftime('%B %Y'))
-    meses_anteriores.reverse() # Para que aparezcan en orden cronológico
-
-    selected_mes_str = request.args.get('mes', meses_anteriores[-1] if meses_anteriores else '')
-
-    return render_template('reportes_gerencia.html',
-                           meses_anteriores=meses_anteriores,
-                           selected_mes_str=selected_mes_str)
 
 @app.route('/reset_password', methods=['GET', 'POST'])
 def reset_password_request():

@@ -432,6 +432,28 @@
             >
             {% endif %}
           </div>
+
+          <div class="col-md-6">
+            <label class="form-label" for="estado_pago">Estado de pago</label>
+            <select id="estado_pago" name="estado_pago" class="form-select">
+              <option value="No Pagado" {% if (editar_reserva and editar_reserva.estado_pago == 'No Pagado') or not editar_reserva %}selected{% endif %}>No pagado</option>
+              <option value="Pagado" {% if editar_reserva and editar_reserva.estado_pago == 'Pagado' %}selected{% endif %}>Pagado</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="venta_cobrada">Venta cobrada</label>
+            <select id="venta_cobrada" name="venta_cobrada" class="form-select">
+              <option value="No cobrada" {% if (editar_reserva and editar_reserva.venta_cobrada == 'No cobrada') or not editar_reserva %}selected{% endif %}>Venta no cobrada</option>
+              <option value="Cobrada" {% if editar_reserva and editar_reserva.venta_cobrada == 'Cobrada' %}selected{% endif %}>Venta cobrada</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="venta_emitida">Venta emitida</label>
+            <select id="venta_emitida" name="venta_emitida" class="form-select">
+              <option value="No emitida" {% if (editar_reserva and editar_reserva.venta_emitida == 'No emitida') or not editar_reserva %}selected{% endif %}>Venta no emitida</option>
+              <option value="Emitida" {% if editar_reserva and editar_reserva.venta_emitida == 'Emitida' %}selected{% endif %}>Venta emitida</option>
+            </select>
+          </div>
         </div>
 
         <div class="mt-4">
