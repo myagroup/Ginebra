@@ -161,7 +161,7 @@
             <td class="text-center">
               {% if r.comprobante_venta %}
               <a
-                href="{{ url_for('descargar_comprobante', filename=r.comprobante_venta) }}"
+                href="{{ url_for('descargar_comprobante', reserva_id=reserva.id) }}"
                 title="Ver PDF"
                 target="_blank"
                 class="icon-btn me-2"

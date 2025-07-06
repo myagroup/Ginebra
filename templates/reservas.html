@@ -499,7 +499,7 @@
             <small class="text-white"
               >Archivo actual:
               <a
-                href="{{ editar_reserva.archivo_pdf_url }}"
+                href="{{ url_for('ver_pdf_db', reserva_id=editar_reserva.id) }}"
                 target="_blank"
                 class="link-warning"
                 >Ver PDF</a

@@ -4,7 +4,7 @@ import io
 import random
 import string
 from datetime import datetime, timedelta
-from flask import ( Flask, render_template, redirect, url_for, request, flash, send_file, send_from_directory)
+from flask import ( Flask, render_template, redirect, url_for, request, flash, send_file, send_from_directory, Response)
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer
 from flask_sqlalchemy import SQLAlchemy
@@ -101,6 +101,7 @@ class Reserva(db.Model):
     destino = db.Column(db.String(100))
     comentarios = db.Column(db.String(100))    
     comprobante_venta = db.Column(db.String(200))
+    comprobante_pdf = db.Column(db.LargeBinary)
     estado_pago = db.Column(db.String(50), default='No Pagado')
     venta_cobrada = db.Column(db.String(50), default='No cobrada')
     venta_emitida = db.Column(db.String(50), default='No emitida')
@@ -128,6 +129,7 @@ def rol_required(*roles):
 # =====================
 # FUNCIONES AUXILIARES
 # =====================
+
 def puede_editar_reserva(reserva):
     return current_user.rol in ('admin', 'master') or reserva.usuario_id == current_user.id
 
@@ -231,23 +233,26 @@ def allowed_file(filename):
 def guardar_comprobante(file, id_localizador):
     if file and file.filename:
         if not allowed_file(file.filename):
-            return None, "Tipo de archivo no permitido. Solo se aceptan PDFs."
-        
-        # Check file size before saving
+            return None, None, "Tipo de archivo no permitido. Solo se aceptan PDFs."
+
+        # Validación de tamaño
         file.seek(0, os.SEEK_END)
         file_size = file.tell()
-        file.seek(0) # Reset file pointer to the beginning
+        file.seek(0)
 
         if file_size > MAX_CONTENT_LENGTH:
-            return None, f"El archivo es demasiado grande. El tamaño máximo permitido es {MAX_CONTENT_LENGTH / (1024 * 1024):.0f} MB."
+            return None, None, f"Archivo demasiado grande. Máximo: {MAX_CONTENT_LENGTH / (1024 * 1024):.0f} MB"
 
         filename = secure_filename(file.filename)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         nombre_final = f"{id_localizador}_{timestamp}_{filename}"
         ruta = os.path.join(app.config['UPLOAD_FOLDER'], nombre_final)
         file.save(ruta)
-        return nombre_final, None
-    return None, None
+        file.seek(0)
+        contenido_binario = file.read()
+        file.seek(0)
+        return nombre_final, contenido_binario, None
+    return None, None, None
 
 def safe_float(val):
     """Convierte un valor a float de forma segura, aceptando comas y espacios. Devuelve 0.0 si no es válido."""
@@ -421,6 +426,23 @@ def eliminar_usuario(id):
     flash('Usuario eliminado.', 'success')
     return redirect(url_for('admin_panel'))
 
+@app.route('/pdf/<int:reserva_id>')
+@login_required
+def ver_pdf_db(reserva_id):
+    reserva = Reserva.query.get_or_404(reserva_id)
+    if not puede_editar_reserva(reserva):
+        flash('No autorizado.', 'danger')
+        return redirect(url_for('gestionar_reservas'))
+    if reserva.comprobante_pdf:
+        return send_file(
+            io.BytesIO(reserva.comprobante_pdf),
+            mimetype='application/pdf',
+            as_attachment=False,
+            download_name=f"{reserva.id_localizador}_comprobante.pdf"
+        )
+    else:
+        flash('No hay comprobante PDF guardado en la base de datos.', 'warning')
+        return redirect(url_for('gestionar_reservas'))
 
 @app.route('/reservas', methods=['GET', 'POST'])
 @login_required
@@ -444,31 +466,30 @@ def gestionar_reservas():
             reserva.id_localizador = id_localizador_form
             set_reserva_fields(reserva, request.form)
 
-            nombre_archivo, error_mensaje = guardar_comprobante(file, reserva.id_localizador)
+            nombre_archivo, contenido_pdf, error_mensaje = guardar_comprobante(file, reserva.id_localizador)
             if error_mensaje:
                 flash(error_mensaje, 'danger')
             elif nombre_archivo:
-                # Eliminar el comprobante anterior si existe y se sube uno nuevo
-                if reserva.comprobante_venta and os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], reserva.comprobante_venta)):
-                    try:
-                        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], reserva.comprobante_venta))
-                        flash(f'Comprobante anterior {reserva.comprobante_venta} eliminado.', 'info')
-                    except OSError as e:
-                        flash(f'Error al eliminar comprobante anterior: {e}', 'warning')
                 reserva.comprobante_venta = nombre_archivo
+                reserva.comprobante_pdf = contenido_pdf
 
         else:
+            # Si no se proporcionó ID o ya existe, generar uno nuevo único
             if not id_localizador_form or Reserva.query.filter_by(id_localizador=id_localizador_form).first():
                 id_localizador_form = generar_localizador_unico()
 
-            nueva_reserva = Reserva(usuario_id=current_user.id, id_localizador=id_localizador_form)
+            nueva_reserva = Reserva(
+                usuario_id=current_user.id,
+                id_localizador=id_localizador_form
+            )
             set_reserva_fields(nueva_reserva, request.form)
 
-            nombre_archivo, error_mensaje = guardar_comprobante(file, id_localizador_form)
+            nombre_archivo, contenido_pdf, error_mensaje = guardar_comprobante(file, id_localizador_form)
             if error_mensaje:
                 flash(error_mensaje, 'danger')
-            elif nombre_archivo:
+            elif nombre_archivo and contenido_pdf:
                 nueva_reserva.comprobante_venta = nombre_archivo
+                nueva_reserva.comprobante_pdf = contenido_pdf
 
             db.session.add(nueva_reserva)
 
@@ -505,8 +526,33 @@ def gestionar_reservas():
         if reserva_a_editar and puede_editar_reserva(reserva_a_editar):
             editar_reserva = reserva_a_editar
 
-    return render_template('reservas.html', reservas=reservas, editar_reserva=editar_reserva, pagination=reservas_paginated, search_query=search_query)
+    return render_template(
+        'reservas.html',
+        reservas=reservas,
+        editar_reserva=editar_reserva,
+        pagination=reservas_paginated,
+        search_query=search_query
+    )
 
+@app.route('/comprobante/<int:reserva_id>')
+@login_required
+def descargar_comprobante(reserva_id):
+    reserva = Reserva.query.get_or_404(reserva_id)
+
+    # Verifica permisos: solo admin/master o dueño de la reserva
+    if current_user.rol not in ('admin', 'master') and reserva.usuario_id != current_user.id:
+        flash('No autorizado para ver este comprobante.', 'danger')
+        return redirect(url_for('gestionar_reservas'))
+
+    if not reserva.comprobante_pdf:
+        flash('No hay comprobante para esta reserva.', 'warning')
+        return redirect(url_for('gestionar_reservas'))
+
+    return Response(
+        reserva.comprobante_pdf,
+        mimetype='application/pdf',
+        headers={"Content-Disposition": f"inline; filename=comprobante_{reserva.id}.pdf"}
+    )
 
 @app.route('/reservas/eliminar/<int:id>', methods=['POST'])
 @login_required
