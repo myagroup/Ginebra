@@ -626,12 +626,6 @@ def exportar_reservas():
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
 
-@app.route('/comprobantes/<filename>')
-@login_required
-def descargar_comprobante(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=False)
-
-
 @app.route('/control_gestion_clientes')
 @login_required
 @rol_required('admin', 'master')
