@@ -27,11 +27,11 @@ app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'comprobantes')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Configuración de Flask-Mail
-app.config['MAIL_SERVER'] = 'smtp.example.com'  # Cambia esto por tu servidor SMTP
-app.config['MAIL_PORT'] = 587  # Puerto SMTP
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'your-email@example.com'  # Cambia esto por tu correo electrónico
-app.config['MAIL_PASSWORD'] = 'your-email-password'  # Cambia esto por tu contraseña de correo electrónico
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'true').lower() == 'true'
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 mail = Mail(app)
 
 # Configuración de itsdangerous
@@ -265,8 +265,20 @@ def safe_float(val):
         return 0.0
 
 def send_reset_email(user, reset_url):
-    msg = Message('Restablecer tu contraseña', sender='noreply@example.com', recipients=[user.correo])
-    msg.body = f'Para restablecer tu contraseña, haz clic en el siguiente enlace: {reset_url}'
+    msg = Message("Restablecer contraseña",
+                  sender=app.config['MAIL_USERNAME'],
+                  recipients=[user.correo])
+    msg.body = f'''Hola {user.username},
+
+Para restablecer tu contraseña, haz clic en el siguiente enlace:
+
+{reset_url}
+
+Si no solicitaste este cambio, simplemente ignora este correo.
+
+Saludos,
+Equipo de Soporte
+'''
     mail.send(msg)
 
 def calcular_comisiones(reserva, usuario):
