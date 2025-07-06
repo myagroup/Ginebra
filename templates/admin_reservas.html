@@ -90,8 +90,14 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>📋 Todas las Reservas - Panel Admin</h2>
         <div>
-          <a href="{{ url_for('admin_panel') }}" class="btn btn-outline-light me-2">Volver al Panel</a>
-          <a href="{{ url_for('logout') }}" class="btn btn-outline-light">Cerrar sesión</a>
+          <a
+            href="{{ url_for('admin_panel') }}"
+            class="btn btn-outline-light me-2"
+            >Volver al Panel</a
+          >
+          <a href="{{ url_for('logout') }}" class="btn btn-outline-light"
+            >Cerrar sesión</a
+          >
         </div>
       </div>
 
@@ -110,7 +116,8 @@
           <a
             href="{{ url_for('admin_reservas') }}"
             class="btn btn-outline-light"
-          >Limpiar</a>
+            >Limpiar</a
+          >
           {% endif %}
         </div>
       </form>
@@ -118,7 +125,6 @@
       <table class="table table-bordered table-hover text-white align-middle">
         <thead>
           <tr>
-            <th>ID</th>
             <th>Usuario</th>
             <th>Fecha venta</th>
             <th>Fecha viaje</th>
@@ -135,7 +141,6 @@
         <tbody>
           {% for r in reservas %}
           <tr>
-            <td>{{ r.id_localizador }}</td>
             <td>{{ r.usuario.username }}</td>
             <td>{{ r.fecha_venta }}</td>
             <td>{{ r.fecha_viaje }}</td>
@@ -146,7 +151,8 @@
             <td>{{ r.localizadores }}</td>
             <td>{{ r.destino }}</td>
             <td>
-              {% if r.estado_pago == 'Pagado' and r.venta_cobrada == 'Cobrada' and r.venta_emitida == 'Emitida' %}
+              {% if r.estado_pago == 'Pagado' and r.venta_cobrada == 'Cobrada'
+              and r.venta_emitida == 'Emitida' %}
               <span class="badge bg-success">ok</span>
               {% else %}
               <span class="badge bg-danger">not ok</span>
@@ -154,19 +160,36 @@
             </td>
             <td class="text-center">
               {% if r.comprobante_venta %}
-              <a href="{{ url_for('descargar_comprobante', filename=r.comprobante_venta) }}" title="Ver PDF" target="_blank" class="icon-btn me-2">
+              <a
+                href="{{ url_for('descargar_comprobante', filename=r.comprobante_venta) }}"
+                title="Ver PDF"
+                target="_blank"
+                class="icon-btn me-2"
+              >
                 <i class="bi bi-file-earmark-pdf"></i>
               </a>
-              {% endif %}
-              {% set puede_editar = current_user.rol in ['admin', 'master'] or r.usuario_id == current_user.id %}
-              {% if puede_editar %}
-              <a href="{{ url_for('gestionar_reservas', editar=r.id) }}" title="Editar" class="icon-btn me-2">
+              {% endif %} {% set puede_editar = current_user.rol in ['admin',
+              'master'] or r.usuario_id == current_user.id %} {% if puede_editar
+              %}
+              <a
+                href="{{ url_for('gestionar_reservas', editar=r.id) }}"
+                title="Editar"
+                class="icon-btn me-2"
+              >
                 <i class="bi bi-pencil-square"></i>
               </a>
-              {% endif %}
-              {% if current_user.rol in ['admin', 'master'] %}
-              <form action="{{ url_for('eliminar_reserva', id=r.id) }}" method="post" class="d-inline" onsubmit="return confirm('¿Eliminar esta reserva?')">
-                <button type="submit" class="btn btn-link p-0 icon-btn" title="Eliminar">
+              {% endif %} {% if current_user.rol in ['admin', 'master'] %}
+              <form
+                action="{{ url_for('eliminar_reserva', id=r.id) }}"
+                method="post"
+                class="d-inline"
+                onsubmit="return confirm('¿Eliminar esta reserva?')"
+              >
+                <button
+                  type="submit"
+                  class="btn btn-link p-0 icon-btn"
+                  title="Eliminar"
+                >
                   <i class="bi bi-trash"></i>
                 </button>
               </form>
@@ -175,7 +198,9 @@
           </tr>
           {% else %}
           <tr>
-            <td colspan="12" class="text-center">No hay reservas registradas.</td>
+            <td colspan="12" class="text-center">
+              No hay reservas registradas.
+            </td>
           </tr>
           {% endfor %}
         </tbody>
@@ -194,19 +219,25 @@
               <span aria-hidden="true">&laquo;</span>
             </a>
           </li>
-          {% endif %}
-          {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
-          {% if page_num %}
-            {% if pagination.page == page_num %}
-            <li class="page-item active"><a class="page-link" href="#">{{ page_num }}</a></li>
-            {% else %}
-            <li class="page-item"><a class="page-link" href="{{ url_for('admin_reservas', page=page_num, search=search_query) }}">{{ page_num }}</a></li>
-            {% endif %}
+          {% endif %} {% for page_num in pagination.iter_pages(left_edge=1,
+          right_edge=1, left_current=2, right_current=2) %} {% if page_num %} {%
+          if pagination.page == page_num %}
+          <li class="page-item active">
+            <a class="page-link" href="#">{{ page_num }}</a>
+          </li>
           {% else %}
-          <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
-          {% endif %}
-          {% endfor %}
-          {% if pagination.has_next %}
+          <li class="page-item">
+            <a
+              class="page-link"
+              href="{{ url_for('admin_reservas', page=page_num, search=search_query) }}"
+              >{{ page_num }}</a
+            >
+          </li>
+          {% endif %} {% else %}
+          <li class="page-item disabled">
+            <a class="page-link" href="#">...</a>
+          </li>
+          {% endif %} {% endfor %} {% if pagination.has_next %}
           <li class="page-item">
             <a
               class="page-link"
