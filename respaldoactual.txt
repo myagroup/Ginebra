@@ -199,10 +199,14 @@ def set_reserva_fields(reserva, form):
         'estado_pago', 'venta_cobrada', 'venta_emitida', 'comentarios'  # Agregados los nuevos campos
     ]
 
-    comision_ejecutivo, comision_agencia, ganancia_total = calcular_comisiones(reserva, reserva.usuario)
-    reserva.comision_ejecutivo = comision_ejecutivo
-    reserva.comision_agencia = comision_agencia
-    reserva.ganancia_total = ganancia_total
+    if reserva.usuario:
+        comision_ejecutivo, comision_agencia, ganancia_total = calcular_comisiones(reserva, reserva.usuario)
+        reserva.comision_ejecutivo = comision_ejecutivo
+        reserva.comision_agencia = comision_agencia
+        reserva.ganancia_total = ganancia_total
+    else:
+        flash('Error: La reserva no tiene un usuario asociado.', 'danger')
+        return
 
     for campo in campos_float:
         try:
@@ -225,6 +229,16 @@ def set_reserva_fields(reserva, form):
             except Exception:
                 continue
     setattr(reserva, 'fecha_venta', fecha_venta_date)
+
+    # Manejo del campo comprobante_pdf
+    file = request.files.get('archivo_pdf')
+    if file:
+        nombre_archivo, contenido_pdf, error_mensaje = guardar_comprobante(file, reserva.id_localizador)
+        if error_mensaje:
+            flash(error_mensaje, 'danger')
+        elif nombre_archivo and contenido_pdf:
+            reserva.comprobante_venta = nombre_archivo
+            reserva.comprobante_pdf = contenido_pdf
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -495,6 +509,8 @@ def gestionar_reservas():
                 usuario_id=current_user.id,
                 id_localizador=id_localizador_form
             )
+            db.session.add(nueva_reserva)
+            db.session.flush()  # Asegura que nueva_reserva tenga un ID asignado
             set_reserva_fields(nueva_reserva, request.form)
 
             nombre_archivo, contenido_pdf, error_mensaje = guardar_comprobante(file, id_localizador_form)
