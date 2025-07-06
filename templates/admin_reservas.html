@@ -139,27 +139,27 @@
           </tr>
         </thead>
         <tbody>
-          {% for r in reservas %}
+          {% for reservas in reservas %}
           <tr>
-            <td>{{ r.usuario.username }}</td>
-            <td>{{ r.fecha_venta }}</td>
-            <td>{{ r.fecha_viaje }}</td>
-            <td>{{ r.producto }}</td>
-            <td>{{ r.nombre_pasajero }}</td>
-            <td>{{ r.telefono_pasajero }}</td>
-            <td>{{ r.mail_pasajero }}</td>
-            <td>{{ r.localizadores }}</td>
-            <td>{{ r.destino }}</td>
+            <td>{{ reservas.usuario.username }}</td>
+            <td>{{ reservas.fecha_venta }}</td>
+            <td>{{ reservas.fecha_viaje }}</td>
+            <td>{{ reservas.producto }}</td>
+            <td>{{ reservas.nombre_pasajero }}</td>
+            <td>{{ reservas.telefono_pasajero }}</td>
+            <td>{{ reservas.mail_pasajero }}</td>
+            <td>{{ reservas.localizadores }}</td>
+            <td>{{ reservas.destino }}</td>
             <td>
-              {% if r.estado_pago == 'Pagado' and r.venta_cobrada == 'Cobrada'
-              and r.venta_emitida == 'Emitida' %}
+              {% if reservas.estado_pago == 'Pagado' and reservas.venta_cobrada == 'Cobrada'
+              and reservas.venta_emitida == 'Emitida' %}
               <span class="badge bg-success">ok</span>
               {% else %}
               <span class="badge bg-danger">not ok</span>
               {% endif %}
             </td>
             <td class="text-center">
-              {% if r.comprobante_venta %}
+              {% if reservas.comprobante_venta %}
               <a
                 href="{{ url_for('descargar_comprobante', reserva_id=reserva.id) }}"
                 title="Ver PDF"
@@ -169,7 +169,7 @@
                 <i class="bi bi-file-earmark-pdf"></i>
               </a>
               {% endif %} {% set puede_editar = current_user.rol in ['admin',
-              'master'] or r.usuario_id == current_user.id %} {% if puede_editar
+              'master'] or reservas.usuario_id == current_user.id %} {% if puede_editar
               %}
               <a
                 href="{{ url_for('gestionar_reservas', editar=r.id) }}"
