@@ -741,6 +741,22 @@ def panel_comisiones():
     reservas = reservas_query.order_by(Reserva.fecha_venta.desc()).all()
 
     datos_comisiones = []
+    totales = {
+        'precio_venta_total': 0.0,
+        'hotel_neto': 0.0,
+        'vuelo_neto': 0.0,
+        'traslado_neto': 0.0,
+        'seguro_neto': 0.0,
+        'circuito_neto': 0.0,
+        'crucero_neto': 0.0,
+        'excursion_neto': 0.0,
+        'paquete_neto': 0.0,
+        'bonos': 0.0,
+        'ganancia_total': 0.0,
+        'comision_ejecutivo': 0.0,
+        'comision_agencia': 0.0
+    }
+    
     for reserva in reservas:
         ejecutivo = reserva.nombre_ejecutivo or ''
         comision_ejecutivo_porcentaje = safe_float(reserva.usuario.comision) / 100.0
@@ -754,21 +770,47 @@ def panel_comisiones():
             reserva.excursion_neto +
             reserva.paquete_neto
         )
-        ganancia_bruta = reserva.precio_venta_total - total_neto
-        comision_ejecutivo = ganancia_bruta * comision_ejecutivo_porcentaje
-        comision_agencia = ganancia_bruta - comision_ejecutivo
+        ganancia_total = reserva.precio_venta_total - total_neto
+        comision_ejecutivo = ganancia_total * comision_ejecutivo_porcentaje
+        comision_agencia = ganancia_total - comision_ejecutivo
+        bonos = reserva.bonos or 0.0
+        
         datos_comisiones.append({
             'reserva': reserva,
             'ejecutivo': ejecutivo,
-            'total_neto': total_neto,
-            'ganancia_bruta': ganancia_bruta,
-            'ganancia_total': ganancia_bruta,
-            'comision_agencia': comision_agencia,
+            'precio_venta_total': reserva.precio_venta_total,
+            'hotel_neto': reserva.hotel_neto,
+            'vuelo_neto': reserva.vuelo_neto,
+            'traslado_neto': reserva.traslado_neto,
+            'seguro_neto': reserva.seguro_neto,
+            'circuito_neto': reserva.circuito_neto,
+            'crucero_neto': reserva.crucero_neto,
+            'excursion_neto': reserva.excursion_neto,
+            'paquete_neto': reserva.paquete_neto,
+            'bonos': bonos,
+            'ganancia_total': ganancia_total,
             'comision_ejecutivo': comision_ejecutivo,
+            'comision_agencia': comision_agencia,
             'comision_ejecutivo_porcentaje': comision_ejecutivo_porcentaje * 100,
-            })
+        })
+        
+        # Sumar a los totales
+        totales['precio_venta_total'] += reserva.precio_venta_total
+        totales['hotel_neto'] += reserva.hotel_neto
+        totales['vuelo_neto'] += reserva.vuelo_neto
+        totales['traslado_neto'] += reserva.traslado_neto
+        totales['seguro_neto'] += reserva.seguro_neto
+        totales['circuito_neto'] += reserva.circuito_neto
+        totales['crucero_neto'] += reserva.crucero_neto
+        totales['excursion_neto'] += reserva.excursion_neto
+        totales['paquete_neto'] += reserva.paquete_neto
+        totales['bonos'] += bonos
+        totales['ganancia_total'] += ganancia_total
+        totales['comision_ejecutivo'] += comision_ejecutivo
+        totales['comision_agencia'] += comision_agencia
     return render_template('panel_comisiones.html',
                            datos_comisiones=datos_comisiones,
+                           totales=totales,
                            ejecutivo_id=ejecutivo_id,
                            rango_fechas_str=rango_fechas_str,
                            ejecutivos=ejecutivos,
@@ -1331,6 +1373,78 @@ def exportar_reservas_usuario():
         output,
         as_attachment=True,
         download_name='mis_reservas.xlsx',
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+@app.route('/exportar_panel_comisiones')
+@login_required
+@rol_required('admin', 'master')
+def exportar_panel_comisiones():
+    ejecutivo_id = request.args.get('ejecutivo_id', type=int)
+    rango_fechas_str = request.args.get('rango_fechas', 'ultimos_30_dias')
+
+    ejecutivos = Usuario.query.filter(Usuario.rol.in_(['usuario', 'admin'])).order_by(Usuario.nombre).all()
+    reservas_query = Reserva.query.join(Usuario)
+    if ejecutivo_id:
+        reservas_query = reservas_query.filter(Reserva.usuario_id == ejecutivo_id)
+    start_date, end_date = _get_date_range(rango_fechas_str)
+    reservas_query = reservas_query.filter(Reserva.fecha_venta >= start_date.strftime('%Y-%m-%d'),
+                                           Reserva.fecha_venta <= end_date.strftime('%Y-%m-%d'))
+    reservas = reservas_query.order_by(Reserva.fecha_venta.desc()).all()
+
+    data = []
+    for reserva in reservas:
+        comision_ejecutivo_porcentaje = safe_float(reserva.usuario.comision) / 100.0
+        total_neto = (
+            reserva.hotel_neto +
+            reserva.vuelo_neto +
+            reserva.traslado_neto +
+            reserva.seguro_neto +
+            reserva.circuito_neto +
+            reserva.crucero_neto +
+            reserva.excursion_neto +
+            reserva.paquete_neto
+        )
+        ganancia_total = reserva.precio_venta_total - total_neto
+        comision_ejecutivo = ganancia_total * comision_ejecutivo_porcentaje
+        comision_agencia = ganancia_total - comision_ejecutivo
+        bonos = reserva.bonos or 0.0
+        
+        data.append({
+            'Precio Venta Total': reserva.precio_venta_total,
+            'Hotel Neto': reserva.hotel_neto,
+            'Vuelo Neto': reserva.vuelo_neto,
+            'Traslado Neto': reserva.traslado_neto,
+            'Seguro Neto': reserva.seguro_neto,
+            'Circuito Neto': reserva.circuito_neto,
+            'Crucero Neto': reserva.crucero_neto,
+            'Excursion Neto': reserva.excursion_neto,
+            'Paquete Neto': reserva.paquete_neto,
+            'Bonos': bonos,
+            'Ganancia Total': ganancia_total,
+            'Comision Ejecutivo': comision_ejecutivo,
+            'Comision Agencia': comision_agencia
+        })
+
+    # Obtener nombre del ejecutivo para el archivo
+    nombre_archivo = 'comisiones'
+    if ejecutivo_id:
+        ejecutivo = Usuario.query.get(ejecutivo_id)
+        if ejecutivo:
+            nombre_archivo = f"{ejecutivo.nombre.lower()}comision"
+    
+    import pandas as pd
+    import io
+    output = io.BytesIO()
+    df = pd.DataFrame(data)
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Panel Comisiones')
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=f'{nombre_archivo}.xlsx',
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
 

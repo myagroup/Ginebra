@@ -87,10 +87,15 @@
         </div>
       </form>
 
+      <div class="mb-3">
+        <a href="{{ url_for('exportar_panel_comisiones', ejecutivo_id=selected_ejecutivo_id, rango_fechas=selected_rango_fechas) }}" class="btn btn-success">
+          Exportar a Excel
+        </a>
+      </div>
+
       <table class="table table-bordered table-hover text-white align-middle">
         <thead class="table-dark">
           <tr>
-            <th>Nombre Ejecutivo</th>
             <th>Producto</th>
             <th>Precio Venta Total</th>
             <th>Hotel Neto</th>
@@ -101,38 +106,56 @@
             <th>Crucero Neto</th>
             <th>Excursión Neto</th>
             <th>Paquete Neto</th>
-            <th>Ganancia Neta</th>
-            <th>Comisión a Pagar al Ejecutivo</th>
+            <th>Bonos</th>
+            <th>Ganancia Total</th>
+            <th>Comisión Ejecutivo</th>
+            <th>Comisión Agencia</th>
           </tr>
         </thead>
         <tbody>
           {% for data in datos_comisiones %}
           <tr>
-            <td>
-              {{ data.reserva.nombre_ejecutivo }}<br>
-              {{ data.reserva.correo_ejecutivo }}
-            </td>
             <td>{{ data.reserva.producto }}</td>
-            <td>${{ "%.2f"|format(data.reserva.precio_venta_total) }}</td>
-            <td>${{ "%.2f"|format(data.reserva.hotel_neto) }}</td>
-            <td>${{ "%.2f"|format(data.reserva.vuelo_neto) }}</td>
-            <td>${{ "%.2f"|format(data.reserva.traslado_neto) }}</td>
-            <td>${{ "%.2f"|format(data.reserva.seguro_neto) }}</td>
-            <td>${{ "%.2f"|format(data.reserva.circuito_neto) }}</td>
-            <td>${{ "%.2f"|format(data.reserva.crucero_neto) }}</td>
-            <td>${{ "%.2f"|format(data.reserva.excursion_neto) }}</td>
-            <td>${{ "%.2f"|format(data.reserva.paquete_neto) }}</td>
-            <td>${{ "%.2f"|format(data.ganancia_bruta) }}</td>
-            <td>${{ "%.2f"|format(data.comision_pago_ejecutivo) }}</td>
+            <td>${{ "%.2f"|format(data.precio_venta_total) }}</td>
+            <td>${{ "%.2f"|format(data.hotel_neto) }}</td>
+            <td>${{ "%.2f"|format(data.vuelo_neto) }}</td>
+            <td>${{ "%.2f"|format(data.traslado_neto) }}</td>
+            <td>${{ "%.2f"|format(data.seguro_neto) }}</td>
+            <td>${{ "%.2f"|format(data.circuito_neto) }}</td>
+            <td>${{ "%.2f"|format(data.crucero_neto) }}</td>
+            <td>${{ "%.2f"|format(data.excursion_neto) }}</td>
+            <td>${{ "%.2f"|format(data.paquete_neto) }}</td>
+            <td>${{ "%.2f"|format(data.bonos) }}</td>
+            <td>${{ "%.2f"|format(data.ganancia_total) }}</td>
+            <td>${{ "%.2f"|format(data.comision_ejecutivo) }}</td>
+            <td>${{ "%.2f"|format(data.comision_agencia) }}</td>
           </tr>
           {% else %}
           <tr>
-            <td colspan="13" class="text-center">
+            <td colspan="14" class="text-center">
               No hay datos de comisiones para los filtros seleccionados.
             </td>
           </tr>
           {% endfor %}
         </tbody>
+        <tfoot>
+          <tr class="table-warning text-dark fw-bold">
+            <td>TOTAL</td>
+            <td>${{ "%.2f"|format(totales.precio_venta_total) }}</td>
+            <td>${{ "%.2f"|format(totales.hotel_neto) }}</td>
+            <td>${{ "%.2f"|format(totales.vuelo_neto) }}</td>
+            <td>${{ "%.2f"|format(totales.traslado_neto) }}</td>
+            <td>${{ "%.2f"|format(totales.seguro_neto) }}</td>
+            <td>${{ "%.2f"|format(totales.circuito_neto) }}</td>
+            <td>${{ "%.2f"|format(totales.crucero_neto) }}</td>
+            <td>${{ "%.2f"|format(totales.excursion_neto) }}</td>
+            <td>${{ "%.2f"|format(totales.paquete_neto) }}</td>
+            <td>${{ "%.2f"|format(totales.bonos) }}</td>
+            <td>${{ "%.2f"|format(totales.ganancia_total) }}</td>
+            <td>${{ "%.2f"|format(totales.comision_ejecutivo) }}</td>
+            <td>${{ "%.2f"|format(totales.comision_agencia) }}</td>
+          </tr>
+        </tfoot>
       </table>
     </div>
 
