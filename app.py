@@ -330,6 +330,7 @@ def admin_panel():
 def admin_reservas():
     search_query = request.args.get('search', '').strip()
     page = request.args.get('page', 1, type=int)
+    per_page = 10  # Número de elementos por página
 
     reservas_query = Reserva.query
 
@@ -345,7 +346,7 @@ def admin_reservas():
             )
         )
 
-    reservas_paginated = reservas_query.paginate(page=page, per_page=PER_PAGE, error_out=False)
+    reservas_paginated = reservas_query.paginate(page=page, per_page=per_page, error_out=False)
     reservas = reservas_paginated.items
     return render_template('admin_reservas.html', reservas=reservas, pagination=reservas_paginated, search_query=search_query)
 
@@ -735,11 +736,17 @@ def reservas_usuarios():
         start_date, end_date = today, today
 
     # Filtrar reservas por usuario y mes
-    reservas = Reserva.query.filter(
+    page = request.args.get('page', 1, type=int)
+    per_page = 10  # Número de elementos por página
+
+    reservas_query = Reserva.query.filter(
         Reserva.usuario_id == current_user.id,
         Reserva.fecha_venta >= start_date.strftime('%Y-%m-%d'),
         Reserva.fecha_venta <= end_date.strftime('%Y-%m-%d')
-    ).all()
+    )
+
+    reservas_paginated = reservas_query.paginate(page=page, per_page=per_page, error_out=False)
+    reservas = reservas_paginated.items
 
     # Calcular totales
     total_ventas = sum(r.precio_venta_total or 0 for r in reservas)
@@ -751,7 +758,8 @@ def reservas_usuarios():
         meses_anteriores=meses_anteriores,
         selected_mes_str=selected_mes_str,
         total_ventas=total_ventas,
-        total_comision_ejecutivo=total_comision_ejecutivo
+        total_comision_ejecutivo=total_comision_ejecutivo,
+        pagination=reservas_paginated
     )
 
 @app.route('/panel_comisiones')
