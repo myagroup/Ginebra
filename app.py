@@ -230,6 +230,16 @@ def set_reserva_fields(reserva, form):
                 continue
     setattr(reserva, 'fecha_venta', fecha_venta_date)
 
+    # Manejo del campo comprobante_pdf
+    file = request.files.get('archivo_pdf')
+    if file:
+        nombre_archivo, contenido_pdf, error_mensaje = guardar_comprobante(file, reserva.id_localizador)
+        if error_mensaje:
+            flash(error_mensaje, 'danger')
+        elif nombre_archivo and contenido_pdf:
+            reserva.comprobante_venta = nombre_archivo
+            reserva.comprobante_pdf = contenido_pdf
+
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -499,6 +509,8 @@ def gestionar_reservas():
                 usuario_id=current_user.id,
                 id_localizador=id_localizador_form
             )
+            db.session.add(nueva_reserva)
+            db.session.flush()  # Asegura que nueva_reserva tenga un ID asignado
             set_reserva_fields(nueva_reserva, request.form)
 
             nombre_archivo, contenido_pdf, error_mensaje = guardar_comprobante(file, id_localizador_form)
