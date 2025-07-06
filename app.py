@@ -199,10 +199,14 @@ def set_reserva_fields(reserva, form):
         'estado_pago', 'venta_cobrada', 'venta_emitida', 'comentarios'  # Agregados los nuevos campos
     ]
 
-    comision_ejecutivo, comision_agencia, ganancia_total = calcular_comisiones(reserva, reserva.usuario)
-    reserva.comision_ejecutivo = comision_ejecutivo
-    reserva.comision_agencia = comision_agencia
-    reserva.ganancia_total = ganancia_total
+    if reserva.usuario:
+        comision_ejecutivo, comision_agencia, ganancia_total = calcular_comisiones(reserva, reserva.usuario)
+        reserva.comision_ejecutivo = comision_ejecutivo
+        reserva.comision_agencia = comision_agencia
+        reserva.ganancia_total = ganancia_total
+    else:
+        flash('Error: La reserva no tiene un usuario asociado.', 'danger')
+        return
 
     for campo in campos_float:
         try:
