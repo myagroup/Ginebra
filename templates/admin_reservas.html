@@ -17,12 +17,17 @@
         color: #ffffff;
         min-height: 100vh;
       }
-      .container {
+      .container-fluid {
         padding-top: 3rem;
         padding-bottom: 3rem;
       }
       h2 {
         margin-bottom: 2rem;
+      }
+
+      .table {
+        width: 100%;
+        table-layout: auto;
       }
 
       .table thead,
@@ -31,6 +36,7 @@
         background-color: #002244;
         color: #ffffff;
       }
+
       .table tbody tr:hover {
         background-color: #004080;
       }
@@ -82,7 +88,7 @@
     </style>
   </head>
   <body>
-    <div class="container">
+    <div class="container-fluid">
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>📋 Todas las Reservas - Panel Admin</h2>
         <div>
@@ -184,9 +190,7 @@
           </tr>
           {% else %}
           <tr>
-            <td colspan="12" class="text-center">
-              No hay reservas registradas.
-            </td>
+            <td colspan="12" class="text-center">No hay reservas registradas.</td>
           </tr>
           {% endfor %}
         </tbody>
