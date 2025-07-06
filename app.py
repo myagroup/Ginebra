@@ -498,6 +498,8 @@ def gestionar_reservas():
         return redirect(url_for('gestionar_reservas'))
 
     search_query = request.args.get('search', '').strip()
+    page = request.args.get('page', 1, type=int)
+    per_page = 10  # Número de elementos por página
 
     reservas_query = Reserva.query
 
@@ -515,8 +517,7 @@ def gestionar_reservas():
             )
         )
 
-    page = request.args.get('page', 1, type=int)
-    reservas_paginated = reservas_query.paginate(page=page, per_page=PER_PAGE, error_out=False)
+    reservas_paginated = reservas_query.paginate(page=page, per_page=per_page, error_out=False)
     reservas = reservas_paginated.items
 
     editar_id = request.args.get('editar')
